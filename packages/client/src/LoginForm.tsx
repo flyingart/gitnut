@@ -14,7 +14,7 @@ export interface LoginFormProps extends StyleProps {
   variant?: "screen" | "inline";
 }
 
-/** Access token form (like Jean's web access screen). Same-origin daemons get a login cookie, others keep the token. */
+/** Access token form. Same-origin daemons get a login cookie, others keep the token. */
 export function LoginForm(props: LoginFormProps) {
   const cx = useCx();
   const conn = useConnection(props.server);

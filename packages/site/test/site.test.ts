@@ -1,9 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, readdir, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { createSite } from "../server/server";
-import { DIST, KOFI_URL, RYBBIT_SCRIPT, RYBBIT_URL } from "./dist";
+import { DIST, RYBBIT_SCRIPT, RYBBIT_URL } from "./dist";
 
 const SUMS = `${"a".repeat(64)}  gitnut-linux-x64\n${"b".repeat(64)}  GitNut-1.4.0-darwin-arm64.dmg\n`;
 const FILES = [
@@ -184,26 +183,18 @@ describe("site", () => {
     }
   });
 
-  test("R-SITE-5: Pricing says GitNut is free, with the Ko-fi button only when the build has GITNUT_KOFI_URL", async () => {
+  test("R-SITE-5: Pricing says GitNut is free; its Ko-fi button stays hidden until /site.json has GITNUT_SPONSOR_KOFI", async () => {
     const html = await Bun.file(join(DIST, "index.html")).text();
     expect(html).toContain('<section id="pricing">');
     expect(html).toContain('<a href="/#pricing">Pricing</a>');
-    expect(html).toContain(`<a class="btn primary" id="kofi" href="${KOFI_URL}" target="_blank" rel="noopener">`);
-    // A build without it (forks, or the var not set) still shows the section, but no button and no Ko-fi.
-    const out = await mkdtemp(join(tmpdir(), "gitnut-site-"));
-    try {
-      const env = { ...process.env, GITNUT_KOFI_URL: "" };
-      const r = Bun.spawnSync(["bun", "--bun", "astro", "build", "--outDir", out], { cwd: join(import.meta.dir, ".."), stdout: "ignore", stderr: "pipe", env });
-      expect(r.exitCode).toBe(0);
-      const plain = await Bun.file(join(out, "index.html")).text();
-      expect(plain).toContain('<section id="pricing">');
-      expect(plain).toContain("free and open source");
-      expect(plain.toLowerCase()).not.toContain("ko-fi");
-      expect(plain).not.toContain('id="kofi"');
-    } finally {
-      await rm(out, { recursive: true, force: true });
-    }
-  }, 60_000);
+    expect(html).toContain("free and open source");
+    // No href in the static page: app.js sets it from /site.json and only then shows the button and the ask.
+    expect(html).toContain('<a class="btn primary" id="kofi" target="_blank" rel="noopener" hidden>');
+    expect(html).toContain('<span id="kofi-ask" hidden>');
+    expect(await (await site().get("/site.json")).json()).toEqual({ sponsors: {} });
+    const s = site({ ...ENV, GITNUT_SPONSOR_KOFI: "https://ko-fi.com/example" });
+    expect(await (await s.get("/site.json")).json()).toEqual({ sponsors: { kofi: "https://ko-fi.com/example" } });
+  });
 
   test("R-SITE-1: every page comes from the shared layout: one Rybbit script, one canonical, the footer links", async () => {
     const s = site();

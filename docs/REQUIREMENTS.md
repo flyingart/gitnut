@@ -142,7 +142,7 @@ component) connects to many daemons and shows all their projects.
   copy-command events; `/privacy` and `/terms` pages linked from the footer. The app and daemon
   send no telemetry.
 - **R-SITE-5** A Pricing section on the landing page says GitNut is free and open source. It shows a
-  Ko-fi donate button only when the build has an https `GITNUT_KOFI_URL`.
+  Ko-fi donate button only when the site has a Ko-fi link (`GITNUT_SPONSOR_KOFI`, from `/site.json`).
 
 ## SDK / embedding (packages/client)
 

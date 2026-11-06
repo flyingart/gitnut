@@ -18,7 +18,7 @@ import { ServersPanel } from "./ServersPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { Shortcuts } from "./Shortcuts";
 import { accentTheme } from "./theme";
-import { desktopWindow, dragRegion, useDesktopVersion, useWindowMaximized } from "./desktop";
+import { desktopWindow, dragRegion, useDesktopVersion, useMacTrafficLights, useWindowMaximized } from "./desktop";
 import { CLIENT_VERSION } from "./version";
 import { UpdateButton } from "./UpdateButton";
 import { Button, Dialog, Empty, IconButton, Menu, MenuButton, Popover, useContextMenu, worktreeLabel } from "./ui";
@@ -78,6 +78,7 @@ function AppInner(props: GitnutAppProps) {
   const [dialog, setDialog] = useState<null | "add" | "settings" | "keys" | { login: GitnutConnection } | { addProjects: string }>(null);
   const [settingsServer, setSettingsServer] = useState<string | null>(null);
   const [sidebar, setSidebar] = useState(true);
+  const macTitlebar = useMacTrafficLights();
   const { options, set, locked } = useViewOptions(props.options);
   // A host theme wins; otherwise the user's appearance choice (settings dialog).
   const theme = useMemo(() => props.theme ?? accentTheme(options.accent, options.scheme), [props.theme, options.accent, options.scheme]);
@@ -181,7 +182,7 @@ function AppInner(props: GitnutAppProps) {
       {fullLogin ? (
         <LoginForm server={onlyServer.conn.url} />
       ) : (
-        <div className="gitnut-app-layout">
+        <div className={macTitlebar ? "gitnut-app-layout gitnut-mac-titlebar" : "gitnut-app-layout"}>
           {props.showSidebar !== false && sidebar && (
             <aside className={cx("sidebar", "gitnut-sidebar", "gitnut-glass")} aria-label="Projects">
               <div className="gitnut-sidebar-head" {...dragRegion}>

@@ -234,8 +234,8 @@ test("R-PROD-5: Settings, Servers: add, rename and remove a server", async ({ pa
   await list.getByRole("button", { name: "Save" }).click();
   await expect(list).toContainText("second box");
   await expect(page.locator("[data-server]")).toContainText(["second box"]);
-  page.once("dialog", (d) => void d.accept());
   await list.locator(`[data-server-row="http://localhost:${port}"]`).getByRole("button", { name: /^Remove/ }).click();
+  await page.getByRole("dialog", { name: /^Remove/ }).getByRole("button", { name: "Remove" }).click();
   await expect(list.locator(`[data-server-row="http://localhost:${port}"]`)).toHaveCount(0);
   await expect(list.getByRole("listitem")).toHaveCount(1);
 });
@@ -251,8 +251,8 @@ test("R-DAEMON-6 R-DAEMON-5: settings screen saves settings and rotates the toke
   await expect(dialog.getByRole("status").last()).toContainText("Saved");
   await expect(page.locator("[data-server]")).toContainText("e2e-renamed");
 
-  page.once("dialog", (d) => void d.accept());
   await dialog.getByRole("button", { name: "Rotate token" }).click();
+  await page.getByRole("dialog", { name: "Rotate the access token?" }).getByRole("button", { name: "Rotate token" }).click();
   const shown = dialog.getByTestId("new-token");
   await expect(shown).toBeVisible();
   const fresh = (await shown.textContent())!.trim();

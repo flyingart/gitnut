@@ -1,3 +1,5 @@
+import { isIP } from "node:net";
+import { hostname } from "node:os";
 import { timingSafeEqual } from "node:crypto";
 import { AUTH_COOKIE, BEARER_PROTOCOL_PREFIX } from "@gitnut/commons";
 
@@ -27,6 +29,26 @@ export function bearerToken(req: Request): string | null {
 
 const TAURI_ORIGINS = ["tauri://localhost", "http://tauri.localhost", "https://tauri.localhost"];
 
+/**
+ * Host names a website can't make point at this machine, so DNS rebinding (an attacker's domain that
+ * suddenly resolves to 127.0.0.1) can't use cookie / no-auth access: IP addresses, localhost, this
+ * machine's own names, mDNS (*.local), Tailscale MagicDNS (*.ts.net), and hosts in `allowedOrigins`.
+ */
+export function hostAllowed(req: Request, allowed: string[]): boolean {
+  const raw = (req.headers.get("host") ?? "").toLowerCase();
+  const host = raw.startsWith("[") ? raw.slice(1, raw.indexOf("]")) : raw.replace(/:\d+$/, "");
+  if (!host || isIP(host) || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".ts.net")) return true;
+  const me = hostname().toLowerCase();
+  if (host === me || host === me.split(".")[0]) return true;
+  return allowed.some((o) => {
+    try {
+      return new URL(o).hostname.toLowerCase() === host;
+    } catch {
+      return false;
+    }
+  });
+}
+
 /** Browser origin allowed for cookie / no-auth access: same host:port, `allowedOrigins`, or the desktop app. */
 export function originAllowed(req: Request, allowed: string[]): boolean {
   const origin = req.headers.get("origin");
@@ -51,6 +73,7 @@ export function authorize(req: Request, auth: { enabled: boolean; token: string 
   const viaCookie = tokenEquals(cookie(req, AUTH_COOKIE), auth.token);
   if (auth.enabled && !viaCookie) return { ok: false, status: 401, message: "unauthorized" };
   if (!originAllowed(req, allowedOrigins)) return { ok: false, status: 403, message: "origin not allowed" };
+  if (!hostAllowed(req, allowedOrigins)) return { ok: false, status: 403, message: "host not allowed: use the access token, or add this address to allowedOrigins" };
   return { ok: true, token: viaCookie ? auth.token : null };
 }
 

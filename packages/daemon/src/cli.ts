@@ -50,7 +50,7 @@ Ask the running daemon to shut down (authenticated with the local token).`,
        gitnut config set <key> <value> [--force]
 
 Keys use dots: name, port, bind, serveWeb, roots, repos, exclude, scanDepth, pollIntervalMs, autoFetchMinutes,
-hideInternalRefs, allowedOrigins, auth.enabled, update.manifestUrl, update.autoCheck.
+hideInternalRefs, allowedOrigins, auth.enabled, update.autoCheck.
 Lists take JSON (["a","b"]) or a comma list (a,b). A running daemon applies changes at once.
 Turning auth off on a public bind needs --force.`,
   token: `Usage: gitnut token [--rotate]

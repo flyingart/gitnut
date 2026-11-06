@@ -193,7 +193,6 @@ restart the listener). The same settings are editable in the client (gear icon).
 | `pollIntervalMs` | `2000` | Live update interval for subscribed repos/worktrees |
 | `hideInternalRefs` | `true` | Leave refs outside `refs/heads`, `refs/remotes`, `refs/tags` out of the graph. Agent tools keep checkpoint commits there (Jean `refs/jean/checkpoints/*`, T3 Code `refs/t3/*`) |
 | `allowedOrigins` | `[]` | Extra browser origins allowed to use cookie / no-auth access (embedding) |
-| `update.manifestUrl` | `""` (the URL baked in at build time) | CLI only: override the update manifest for testing |
 | `update.autoCheck` | `true` | Check at start and every 6 h, show the update button |
 
 Worktrees are grouped under their main repository (same git common dir), including worktrees
@@ -213,9 +212,16 @@ access to it like shell access.
   SameSite=Strict cookie. SDK clients pass it as WebSocket subprotocol `gitnut.bearer.<token>`.
   Comparisons are constant-time. `gitnut token --rotate` disconnects every session that used
   the old token.
-- **Origin check.** Cookie and no-auth access only work from the daemon's own origin,
-  `allowedOrigins` and the desktop app, so other websites can't drive a local daemon.
-  Bearer-token access works from any origin (that is how embedding works).
+- **Origin and host checks.** Cookie and no-auth access only work from the daemon's own origin,
+  `allowedOrigins` and the desktop app, so other websites can't drive a local daemon. They also
+  need a host name a website can't point at your machine (IP addresses, `localhost`, the machine's
+  own name, `*.local`, Tailscale `*.ts.net`, or a host in `allowedOrigins`), which stops DNS
+  rebinding. Bearer-token access works from any origin (that is how embedding works).
+- **Framing.** The web client may only be framed by the daemon's own pages and `allowedOrigins`.
+  The health check (`/api/health`, open to any website) leaves out the machine's name for others.
+- **Updates.** The update manifest is baked into the binary (`GITNUT_SITE_URL` at build time) and
+  is not a setting, so no client can point a daemon at another binary. Downloads are checked against
+  `SHA256SUMS`; desktop app updates are also signed with our updater key.
 - **Exposure.** Turning auth off on a
   public bind (`all` or a non-Tailscale IP) is refused without `--force`. Exposing a daemon to
   the internet: keep auth on and put it behind HTTPS (a reverse proxy that sets
@@ -297,8 +303,8 @@ token is passed in the URL hash. Live examples: `/examples.html` on any daemon.
 
 1. `bun run release` (start, build on each machine, publish) creates the GitHub release; the website
    reads GitHub releases, so its `/manifest.json` offers the new version within 10 minutes.
-2. Daemons check `<GITNUT_SITE_URL>/manifest.json` (baked in at build time; `gitnut config set
-   update.manifestUrl` overrides it for testing). An update icon shows next to the logo.
+2. Daemons check `<GITNUT_SITE_URL>/manifest.json` (baked in at build time; `GITNUT_MANIFEST_URL` in the
+   daemon's environment overrides it for mirrors and tests). An update icon shows next to the logo.
    `gitnut update` or that icon downloads the binary for the platform, verifies its SHA-256,
    replaces the executable and restarts it (a service is restarted by systemd/launchd, otherwise
    the new binary starts itself). The daemon serves the web client, so it updates with it.

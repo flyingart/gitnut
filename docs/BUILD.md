@@ -35,15 +35,22 @@ loads it for every script).
 | | `TAURI_SIGNING_PRIVATE_KEY` | desktop builds | Path to (or content of) the desktop updater key; `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` if it has one. |
 | | `APPLE_SIGNING_IDENTITY` | no | macOS certificate; picked from the Keychain when unset. `GITNUT_NOTARY_PROFILE` (default `gitnut-notary`) for notarization. |
 | Website (Coolify) | `GITNUT_GITHUB_REPO` | yes | `owner/repo` whose GitHub releases are the source of truth (versions, files, checksums, changelog, desktop updates). |
-| | `GITNUT_SITE_URL` | no | Canonical URL (default: from the request / `X-Forwarded-*`). |
+| | `GITNUT_SITE_URL` | yes | Public URL, e.g. `https://gitnut.dev`: canonical links, install scripts, manifest and download URLs. Never taken from request headers (cache poisoning). |
 | | `GITNUT_GITHUB_TOKEN` | no | Read-only token while the repo is private (files are then streamed through the site). |
 | | `GITNUT_GITHUB_REFRESH_MINUTES` | no | How often releases are re-read (default 10). |
 | | `GITNUT_SPONSOR_GITHUB` / `_KOFI` / `_PAYPAL` | no | Donation links shown in the Support section. |
 | | `PORT` / `HOST` | no | Listen address, default `0.0.0.0:7431`. |
 | Daemon at runtime | `GITNUT_HOME` | no | Config folder, default `~/.gitnut`. |
 
+| | `GITNUT_MANIFEST_URL` | no | Overrides the baked-in update manifest, in the daemon's own environment (self-hosted mirror, tests). Not a setting on purpose: whoever picks the manifest picks the binary the daemon installs. |
+| | `GITNUT_MANAGED_BY` | set by the app | `desktop` when the desktop app started the daemon: it then never updates itself. |
+| | `GITNUT_SERVICE` | set by the service | Marks a daemon run by systemd / launchd, so a self-update restarts through the service. |
+
 Dev and tests only: `GITNUT_DEV_HOST`, `GITNUT_DEV_DAEMON`, `GITNUT_DEV_HOME`, `GITNUT_WEB_DIR`,
-`GITNUT_FIXTURES`, `GITNUT_E2E_*`.
+`GITNUT_FIXTURES`, `GITNUT_EXEC_PATH` (binary an update replaces, for tests), `GITNUT_SERVICE_DIR` /
+`GITNUT_SERVICE_DRY` (service install tests), `SITE_PORT` / `SITE_API_PORT` / `GITNUT_SITE_API`
+(`bun run dev` site), `GITNUT_E2E_*`. macOS signing also reads `APPLE_TEAM_ID` when the identity name
+has none.
 
 ## Install (users)
 
@@ -167,10 +174,13 @@ What it does on start (`src/lib.rs`):
 3. reads `gitnut token` and opens `<url>/?token=<token>` in the window (sets the cookie);
 4. on quit runs `gitnut stop` if the app started the daemon.
 
-The loading/error page is local (`packages/desktop/src`). The daemon's pages are remote
-content: the capability file has no `remote` entry, so they get no Tauri IPC. The shell has
-no updater: the web client updates the daemon in `~/.gitnut/bin` (see below), and the app
-uses that copy on the next start. A new shell version comes from a new installer.
+The loading/error page is local (`packages/desktop/src`). The daemon's pages are remote content to
+Tauri. After the daemon is up, the app grants exactly that address (scheme, host and port) three
+commands and nothing else (`lib.rs`, `grant_daemon_page`; declared in `build.rs`):
+`desktop_version`, `desktop_update_check`, `desktop_update_install`. The web client's update icon
+and Settings button use them, so the app and its daemon update together with the Tauri updater
+(see "How updates flow"). The app starts its daemon with `GITNUT_MANAGED_BY=desktop`, so that daemon
+never updates itself.
 
 ```sh
 bun run build:desktop [--version X] [--target <rust triple>] [--sidecar path/to/gitnut]

@@ -26,7 +26,8 @@ export function loadConfig(home: string): Config {
       ...structuredClone(DEFAULT_SETTINGS),
       ...s,
       auth: { enabled: s.auth?.enabled ?? DEFAULT_SETTINGS.auth.enabled, token: s.auth?.token || newToken() },
-      update: { ...DEFAULT_SETTINGS.update, ...s.update },
+      // only known keys: an old config's update.manifestUrl (now GITNUT_MANIFEST_URL) is dropped
+      update: { autoCheck: s.update?.autoCheck ?? DEFAULT_SETTINGS.update.autoCheck },
     },
   };
   if (!raw.id || !s.auth?.token) saveConfig(home, cfg);
@@ -83,10 +84,6 @@ export const KEYS: Record<string, KeyDef> = {
   },
   "auth.enabled": { kind: "boolean" },
   "auth.rotateToken": { kind: "boolean" },
-  "update.manifestUrl": {
-    kind: "string",
-    check: (v: string) => (v === "" || /^https?:\/\/\S+$/.test(v) ? v : fail("bad_request", "must be empty or an http(s) URL")),
-  },
   "update.autoCheck": { kind: "boolean" },
 };
 

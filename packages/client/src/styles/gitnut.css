@@ -2085,3 +2085,9 @@ select.gitnut-input {
   object-fit: contain;
   image-rendering: auto;
 }
+
+.gitnut-version-footer {
+  padding-top: 14px;
+  font-size: var(--gitnut-font-size-xs);
+  text-align: center;
+}

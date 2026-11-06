@@ -18,6 +18,7 @@ import { ServersPanel } from "./ServersPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { Shortcuts } from "./Shortcuts";
 import { accentTheme } from "./theme";
+import { CLIENT_VERSION, desktopAppVersion } from "./version";
 import { UpdateButton } from "./UpdateButton";
 import { Dialog, Empty, IconButton, Popover, useContextMenu } from "./ui";
 import { useViewOptions, type ViewOptions } from "./viewOptions";
@@ -331,6 +332,7 @@ function AppInner(props: GitnutAppProps) {
             </select>
           )}
           {settingsConn.state === "unauthorized" ? <LoginForm server={settingsConn.url} variant="inline" /> : <SettingsPanel key={settingsConn.url} server={settingsConn.url} />}
+          <VersionFooter />
         </Dialog>
       )}
       {dialog && typeof dialog === "object" && "addProjects" in dialog && <AddProjectsDialog server={dialog.addProjects} onClose={() => setDialog(null)} />}
@@ -340,6 +342,17 @@ function AppInner(props: GitnutAppProps) {
         </Dialog>
       )}
     </GitnutRoot>
+  );
+}
+
+/** Bottom line of the settings: client (web) version, desktop app version when inside it. */
+function VersionFooter() {
+  const app = useMemo(desktopAppVersion, []);
+  return (
+    <div className="gitnut-version-footer gitnut-muted" data-testid="version-footer">
+      GitNut {CLIENT_VERSION}
+      {app && ` · desktop app ${app}`}
+    </div>
   );
 }
 

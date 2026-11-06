@@ -4,7 +4,6 @@ import type { UpdateManifest } from "./protocol";
 /** Release folder layout: `${base}/${version}/${file}`. Shared by site, release script and installers. */
 
 export const SHA256SUMS = "SHA256SUMS";
-export const MANIFEST_FILE = "manifest.json";
 
 export interface DesktopAsset {
   /** Manifest / `/download/<key>` key. */
@@ -14,6 +13,11 @@ export interface DesktopAsset {
   bundle: "dmg" | "nsis" | "appimage" | "deb";
   label: string;
   file: (version: string) => string;
+  /**
+   * Tauri updater: its platform key in latest.json and the update file (signature: file + ".sig").
+   * macOS updates a .app.tar.gz; Windows and the AppImage update from the installer itself.
+   */
+  updater?: { target: string; file: (version: string) => string };
 }
 
 export const DESKTOP_ASSETS: DesktopAsset[] = [
@@ -23,6 +27,7 @@ export const DESKTOP_ASSETS: DesktopAsset[] = [
     bundle: "dmg",
     label: "macOS (Apple Silicon)",
     file: (v) => `GitNut-${v}-darwin-arm64.dmg`,
+    updater: { target: "darwin-aarch64", file: (v) => `GitNut-${v}-darwin-arm64.app.tar.gz` },
   },
   {
     key: "desktop-darwin-x64",
@@ -30,6 +35,7 @@ export const DESKTOP_ASSETS: DesktopAsset[] = [
     bundle: "dmg",
     label: "macOS (Intel)",
     file: (v) => `GitNut-${v}-darwin-x64.dmg`,
+    updater: { target: "darwin-x86_64", file: (v) => `GitNut-${v}-darwin-x64.app.tar.gz` },
   },
   {
     key: "desktop-windows-x64",
@@ -37,6 +43,7 @@ export const DESKTOP_ASSETS: DesktopAsset[] = [
     bundle: "nsis",
     label: "Windows (x64)",
     file: (v) => `GitNut-${v}-windows-x64-setup.exe`,
+    updater: { target: "windows-x86_64", file: (v) => `GitNut-${v}-windows-x64-setup.exe` },
   },
   {
     key: "desktop-linux-x64",
@@ -44,6 +51,7 @@ export const DESKTOP_ASSETS: DesktopAsset[] = [
     bundle: "appimage",
     label: "Linux AppImage (x64)",
     file: (v) => `GitNut-${v}-linux-x64.AppImage`,
+    updater: { target: "linux-x86_64", file: (v) => `GitNut-${v}-linux-x64.AppImage` },
   },
   {
     key: "desktop-linux-x64-deb",

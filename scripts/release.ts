@@ -1,24 +1,16 @@
 #!/usr/bin/env bun
 // Build a release folder (R-UPD-6).
-//   bun run release <version> [--targets all|<list>] [--skip-desktop] [--upload] [--publish --notes FILE.md [--title T]]
+//   bun run release <version> [--targets all|<list>] [--skip-desktop] [--publish --notes FILE.md [--title T]]
 // --publish: GitHub release v<version> with every file (gh CLI). The site reads releases from GitHub
 // (GITNUT_GITHUB_REPO), so this is the only step after building. Notes: "### New / ### Improved /
-// ### Fixed" headings with "- " bullets (they become the changelog page).
-// Env: GITNUT_SITE_URL (or GITNUT_DOWNLOAD_BASE_URL, default <site>/releases), GITNUT_MANIFEST_URL, GITNUT_RELEASE_NOTES,
-//      GITNUT_UPLOAD_CMD (for --upload, e.g. `rsync -av {dir}/ host:/srv/gitnut/{version}/`).
+// ### Fixed" headings with "- " bullets (they become the changelog page and the update notes).
+// Env (.env): GITNUT_SITE_URL (baked into the binaries: updates come from <site>/manifest.json),
+//      TAURI_SIGNING_PRIVATE_KEY (+ _PASSWORD) for the desktop updater files.
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
-import {
-  MANIFEST_FILE,
-  SHA256SUMS,
-  binaryName,
-  buildManifest,
-  formatSha256Sums,
-  platformOf,
-  releaseFiles,
-} from "@gitnut/commons";
+import { DESKTOP_ASSETS, SHA256SUMS, binaryName, formatSha256Sums, platformOf, releaseFiles } from "@gitnut/commons";
 
 const ROOT = resolve(import.meta.dir, "..");
 
@@ -43,7 +35,6 @@ async function main() {
     options: {
       targets: { type: "string", default: "all" },
       "skip-desktop": { type: "boolean", default: false },
-      upload: { type: "boolean", default: false },
       publish: { type: "boolean", default: false },
       notes: { type: "string" },
       title: { type: "string" },
@@ -51,14 +42,9 @@ async function main() {
   });
   const version = positionals[0]?.replace(/^v/, "");
   if (!version || !/^\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?$/.test(version)) {
-    throw new Error("usage: bun run release <version> [--targets all] [--skip-desktop] [--upload]");
+    throw new Error("usage: bun run release <version> [--targets all] [--skip-desktop] [--publish --notes notes.md]");
   }
-  const site = process.env.GITNUT_SITE_URL?.replace(/\/+$/, "");
-  // default: the site serves the files (from GitHub releases) at <site>/releases/<version>/<file>
-  const base = (process.env.GITNUT_DOWNLOAD_BASE_URL || (site ? `${site}/releases` : "")).replace(/\/+$/, "");
-  if (!base) throw new Error("set GITNUT_SITE_URL or GITNUT_DOWNLOAD_BASE_URL (assets are served from <base>/<version>/<file>)");
-  const manifestUrl = process.env.GITNUT_MANIFEST_URL ?? (site ? `${site}/manifest.json` : undefined);
-  if (!manifestUrl) throw new Error("set GITNUT_SITE_URL (or GITNUT_MANIFEST_URL): shipped binaries must know where updates come from");
+  if (!process.env.GITNUT_SITE_URL) throw new Error("set GITNUT_SITE_URL (in .env): shipped binaries must know where updates come from");
 
   // 1. version everywhere
   const pkgs = ["package.json", ...readdirSync(join(ROOT, "packages")).map((p) => join("packages", p, "package.json"))];
@@ -71,55 +57,38 @@ async function main() {
 
   // 2. web + daemon binaries into release/<version>/
   const dir = join(ROOT, "release", version);
-  const buildEnv = { GITNUT_DOWNLOAD_BASE_URL: base, GITNUT_MANIFEST_URL: manifestUrl };
   const daemon = ["bun", "run", "scripts/build-daemon.ts", "--targets", values.targets!, "--out", dir, "--version", version];
   if (existsSync(join(ROOT, "packages", "web", "index.html"))) daemon.push("--build-web");
-  sh(daemon, buildEnv);
+  sh(daemon);
 
   // 3. desktop app for this host (other OSes: build there and copy the installers into release/<version>/)
   if (!values["skip-desktop"]) {
     const host = platformOf(process.platform, process.arch);
     const sidecar = host && join(dir, binaryName(host));
-    sh(["bun", "run", "scripts/build-desktop.ts", "--version", version, ...(sidecar && existsSync(sidecar) ? ["--sidecar", sidecar] : [])], buildEnv);
+    sh(["bun", "run", "scripts/build-desktop.ts", "--version", version, ...(sidecar && existsSync(sidecar) ? ["--sidecar", sidecar] : [])]);
   }
 
-  // 4. SHA256SUMS + manifest.json over everything in the folder
+  // 4. SHA256SUMS over everything in the folder (the site builds the manifest from it)
   const sums: Record<string, string> = {};
   for (const f of readdirSync(dir)) {
-    if (f === SHA256SUMS || f === MANIFEST_FILE || f.startsWith(".") || !statSync(join(dir, f)).isFile()) continue;
+    if (f === SHA256SUMS || f.startsWith(".") || !statSync(join(dir, f)).isFile()) continue;
     sums[f] = createHash("sha256").update(readFileSync(join(dir, f))).digest("hex");
   }
   writeFileSync(join(dir, SHA256SUMS), formatSha256Sums(sums));
-  const publishedAt = new Date().toISOString();
-  const manifest = buildManifest({ version, base, notes: process.env.GITNUT_RELEASE_NOTES, publishedAt, downloadPage: site, sha256s: sums });
-  writeFileSync(join(dir, MANIFEST_FILE), `${JSON.stringify(manifest, null, 2)}\n`);
 
-  const missing = Object.values(releaseFiles(version)).filter((f) => !sums[f]);
+  const updaterFiles = DESKTOP_ASSETS.flatMap((a) => (a.updater ? [a.updater.file(version), `${a.updater.file(version)}.sig`] : []));
+  const missing = [...new Set([...Object.values(releaseFiles(version)), ...updaterFiles])].filter((f) => !sums[f]);
   console.log(`\nRelease ${version}: ${dir}`);
   for (const f of Object.keys(sums).sort()) console.log(`  ${f}  ${(statSync(join(dir, f)).size / 1e6).toFixed(1)} MB`);
   if (missing.length) console.log(`Missing (build on their OS and copy here, then re-run with --skip-desktop):\n  ${missing.join("\n  ")}`);
 
-  // 5. upload
-  if (values.upload) {
-    const cmd = process.env.GITNUT_UPLOAD_CMD;
-    if (!cmd) throw new Error("--upload needs GITNUT_UPLOAD_CMD, e.g. 'rsync -av {dir}/ host:/srv/gitnut/{version}/'");
-    sh(["sh", "-c", cmd.replaceAll("{dir}", dir).replaceAll("{version}", version)]);
-  }
-
-  // 6. GitHub release (the site picks it up on its next refresh / restart)
+  // 5. GitHub release (the site picks it up on its next refresh / restart)
   if (values.publish) {
     if (!values.notes || !existsSync(values.notes)) throw new Error("--publish needs --notes <file.md> (### New / ### Improved / ### Fixed with - bullets)");
     if (missing.length) console.warn(`warning: publishing without ${missing.join(", ")}; add them later with: gh release upload v${version} <file>`);
     const files = readdirSync(dir).map((f) => join(dir, f));
     sh(["gh", "release", "create", `v${version}`, ...files, "--title", values.title ?? `GitNut ${version}`, "--notes-file", values.notes]);
-    return;
-  }
-
-  console.log("\nSet on the website (Coolify env):");
-  console.log(`  GITNUT_LATEST_VERSION=${version}`);
-  console.log(`  GITNUT_DOWNLOAD_BASE_URL=${base}`);
-  console.log(`  GITNUT_PUBLISHED_AT=${publishedAt}`);
-  if (process.env.GITNUT_RELEASE_NOTES) console.log(`  GITNUT_RELEASE_NOTES=${JSON.stringify(process.env.GITNUT_RELEASE_NOTES)}`);
+  } else console.log(`\nPublish with: bun run release ${version} --skip-desktop --publish --notes notes.md`);
 }
 
 main().catch((e) => {

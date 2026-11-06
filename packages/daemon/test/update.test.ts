@@ -96,7 +96,7 @@ test("R-UPD-2: up to date and no manifest URL", async () => {
   expect((await c.send("update.apply")).error.code).toBe("conflict");
   await c.call("settings.update", { patch: { update: { manifestUrl: "" } } });
   const info = await c.call("update.check");
-  expect(info.error).toContain(process.env.GITNUT_MANIFEST_URL ? "" : "updates are off");
+  expect(info.error).toContain("updates are off");
   await c.call("settings.update", { patch: { update: { manifestUrl: `${base}/manifest.json` } } });
 });
 

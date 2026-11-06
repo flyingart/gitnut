@@ -1,27 +1,47 @@
 import { describe, expect, test } from "bun:test";
 import { createSite } from "../src/server";
 
-const ENV = {
-  GITNUT_LATEST_VERSION: "1.4.0",
-  GITNUT_DOWNLOAD_BASE_URL: "https://dl.example.com/gitnut/",
-  GITNUT_RELEASE_NOTES: "Faster graph",
-  GITNUT_PUBLISHED_AT: "2026-11-06T10:00:00Z",
-  GITNUT_SITE_URL: "https://gitnut.example.com",
-};
 const SUMS = `${"a".repeat(64)}  gitnut-linux-x64\n${"b".repeat(64)}  GitNut-1.4.0-darwin-arm64.dmg\n`;
+const FILES = [
+  "gitnut-linux-x64",
+  "gitnut-darwin-arm64",
+  "gitnut-windows-x64.exe",
+  "GitNut-1.4.0-darwin-arm64.dmg",
+  "GitNut-1.4.0-darwin-arm64.app.tar.gz",
+  "GitNut-1.4.0-darwin-arm64.app.tar.gz.sig",
+  "GitNut-1.4.0-windows-x64-setup.exe",
+  "GitNut-1.4.0-windows-x64-setup.exe.sig",
+  "GitNut-1.4.0-linux-x64.deb",
+  "SHA256SUMS",
+];
+const RELEASE = {
+  tag_name: "v1.4.0",
+  name: "GitNut 1.4.0",
+  body: "### New\n- Faster graph\n### Fixed\n- Footer",
+  draft: false,
+  prerelease: false,
+  published_at: "2026-11-06T10:00:00Z",
+  assets: FILES.map((f) => ({ name: f, url: `https://api.github.com/assets/${f}`, browser_download_url: `https://github.com/o/r/releases/download/v1.4.0/${f}` })),
+};
+const ENV = { GITNUT_GITHUB_REPO: "o/r", GITNUT_SITE_URL: "https://gitnut.example.com" };
 
-function site(env: Record<string, string> = ENV, sums: string | null = SUMS) {
+/** Site against a fake GitHub with one release (or none). */
+function site(env: Record<string, string> = ENV, release: typeof RELEASE | null = RELEASE) {
   const seen: string[] = [];
   const fetchImpl = (async (url: string) => {
-    seen.push(String(url));
-    return sums === null ? new Response("nope", { status: 404 }) : new Response(sums);
+    const u = String(url);
+    seen.push(u);
+    if (u.includes("/releases?")) return Response.json(release ? [release] : []);
+    if (u.endsWith("/SHA256SUMS")) return new Response(SUMS);
+    if (u.endsWith(".sig")) return new Response(`SIG-${u.split("/").pop()}\n`);
+    return new Response("nope", { status: 404 });
   }) as unknown as typeof fetch;
   const handle = createSite(env, fetchImpl);
   return { seen, get: (path: string) => handle(new Request(`http://site.local${path}`)) };
 }
 
 describe("site", () => {
-  test("R-UPD-1: /manifest.json comes from env, with sha256 from SHA256SUMS", async () => {
+  test("R-UPD-1: /manifest.json comes from the latest GitHub release, with sha256 from SHA256SUMS", async () => {
     const s = site();
     const res = await s.get("/manifest.json");
     expect(res.status).toBe(200);
@@ -30,29 +50,43 @@ describe("site", () => {
     expect(m.notes).toBe("Faster graph");
     expect(m.publishedAt).toBe("2026-11-06T10:00:00Z");
     expect(m.downloadPage).toBe("https://gitnut.example.com");
-    expect(m.assets["linux-x64"]).toEqual({ url: "https://dl.example.com/gitnut/1.4.0/gitnut-linux-x64", sha256: "a".repeat(64) });
-    expect(m.assets["windows-x64"].url).toBe("https://dl.example.com/gitnut/1.4.0/gitnut-windows-x64.exe");
+    expect(m.assets["linux-x64"]).toEqual({ url: "https://gitnut.example.com/releases/1.4.0/gitnut-linux-x64", sha256: "a".repeat(64) });
+    expect(m.assets["windows-x64"].url).toBe("https://gitnut.example.com/releases/1.4.0/gitnut-windows-x64.exe");
     expect(m.assets["windows-x64"].sha256).toBeUndefined();
     expect(m.assets["desktop-darwin-arm64"].sha256).toBe("b".repeat(64));
-    expect(s.seen).toEqual(["https://dl.example.com/gitnut/1.4.0/SHA256SUMS"]);
+    const sumsFetches = () => s.seen.filter((u) => u.endsWith("/SHA256SUMS")).length;
+    expect(sumsFetches()).toBe(1);
     await s.get("/manifest.json");
-    expect(s.seen).toHaveLength(1); // cached
+    expect(sumsFetches()).toBe(1); // cached
   });
 
-  test("R-UPD-1: manifest works without SHA256SUMS and reports 503 when unconfigured", async () => {
-    const m = await (await site(ENV, null).get("/manifest.json")).json();
-    expect(m.assets["linux-x64"].sha256).toBeUndefined();
-    expect((await site({}).get("/manifest.json")).status).toBe(503);
-    expect((await site({}).get("/install.sh")).status).toBe(503);
+  test("R-UPD-1: no release yet: manifest, installers and downloads answer 503, updater feed 204", async () => {
+    for (const s of [site(ENV, null), site({})]) {
+      expect((await s.get("/manifest.json")).status).toBe(503);
+      expect((await s.get("/install.sh")).status).toBe(503);
+      expect((await s.get("/download/linux-x64")).status).toBe(503);
+      expect((await s.get("/desktop/latest.json")).status).toBe(204);
+    }
   });
 
-  test("R-SITE-2: /download/<key> redirects to the release asset", async () => {
+  test("R-UPD-5: /desktop/latest.json is the Tauri updater feed of the released platforms", async () => {
+    const res = await site().get("/desktop/latest.json");
+    expect(res.status).toBe(200);
+    const feed = await res.json();
+    expect(feed).toMatchObject({ version: "1.4.0", pub_date: "2026-11-06T10:00:00Z", notes: "- Faster graph\n- Footer" });
+    expect(feed.platforms).toEqual({
+      "darwin-aarch64": { signature: "SIG-GitNut-1.4.0-darwin-arm64.app.tar.gz.sig", url: "https://gitnut.example.com/releases/1.4.0/GitNut-1.4.0-darwin-arm64.app.tar.gz" },
+      "windows-x86_64": { signature: "SIG-GitNut-1.4.0-windows-x64-setup.exe.sig", url: "https://gitnut.example.com/releases/1.4.0/GitNut-1.4.0-windows-x64-setup.exe" },
+    }); // no Intel Mac / AppImage files in this release: left out
+  });
+
+  test("R-SITE-2: /download/<key> redirects to the release file", async () => {
     const s = site();
     let res = await s.get("/download/darwin-arm64");
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("https://dl.example.com/gitnut/1.4.0/gitnut-darwin-arm64");
+    expect(res.headers.get("location")).toBe("https://gitnut.example.com/releases/1.4.0/gitnut-darwin-arm64");
     res = await s.get("/download/desktop-windows-x64");
-    expect(res.headers.get("location")).toBe("https://dl.example.com/gitnut/1.4.0/GitNut-1.4.0-windows-x64-setup.exe");
+    expect(res.headers.get("location")).toBe("https://gitnut.example.com/releases/1.4.0/GitNut-1.4.0-windows-x64-setup.exe");
     res = await s.get("/download/desktop-linux-x64-deb");
     expect(res.headers.get("location")).toEndWith("/GitNut-1.4.0-linux-x64.deb");
     expect((await s.get("/download/solaris-sparc")).status).toBe(404);
@@ -61,13 +95,13 @@ describe("site", () => {
   test("R-UPD-4: install scripts are templated with site URL, download base and version", async () => {
     const s = site();
     const sh = await (await s.get("/install.sh")).text();
-    expect(sh).toContain('BASE="https://dl.example.com/gitnut"');
+    expect(sh).toContain('BASE="https://gitnut.example.com/releases"');
     // biome-ignore lint/suspicious/noTemplateCurlyInString: shell parameter expansion, not a JS template
     expect(sh).toContain('VERSION="${GITNUT_VERSION:-1.4.0}"');
     expect(sh).toContain("https://gitnut.example.com/install.ps1");
     expect(sh).not.toContain("__GITNUT_");
     const ps = await (await s.get("/install.ps1")).text();
-    expect(ps).toContain("$Base = 'https://dl.example.com/gitnut'");
+    expect(ps).toContain("$Base = 'https://gitnut.example.com/releases'");
     expect(ps).toContain("'1.4.0'");
     expect(ps).toContain("Get-FileHash");
     expect(ps).not.toContain("__GITNUT_");
@@ -117,9 +151,8 @@ describe("site", () => {
   });
 
   test("R-SITE-2: site URL falls back to forwarded headers", async () => {
-    const { GITNUT_SITE_URL: _, ...env } = ENV;
-    const handle = createSite(env, (async () => new Response("")) as unknown as typeof fetch);
-    const res = await handle(new Request("http://10.0.0.5:7431/install.sh", { headers: { "x-forwarded-proto": "https", "x-forwarded-host": "get.gitnut.dev" } }));
+    const h = createSite({ GITNUT_GITHUB_REPO: "o/r" }, (async () => Response.json([RELEASE])) as unknown as typeof fetch);
+    const res = await h(new Request("http://10.0.0.5:7431/install.sh", { headers: { "x-forwarded-proto": "https", "x-forwarded-host": "get.gitnut.dev" } }));
     expect(await res.text()).toContain("irm https://get.gitnut.dev/install.ps1 | iex");
   });
 
@@ -135,7 +168,7 @@ describe("site", () => {
     expect((await s.get("/%2e%2e/src/server.ts")).status).toBe(404);
   });
 
-  test("R-SITE-1: /changelog serves the page; changelog.json parses and is newest first", async () => {
+  test("R-SITE-1: /changelog serves the page; changelog.json comes from the releases", async () => {
     const s = site();
     for (const path of ["/changelog", "/changelog/"]) {
       const res = await s.get(path);
@@ -143,23 +176,9 @@ describe("site", () => {
       expect(res.headers.get("content-type")).toContain("text/html");
       expect(await res.text()).toContain('id="releases"');
     }
-    const releases: { version: string; date: string; title: string; items: { type: string; text: string }[] }[] = await (
-      await s.get("/changelog.json")
-    ).json();
-    expect(releases.length).toBeGreaterThan(0);
-    const num = (v: string) => v.split(".").map(Number);
-    for (const [i, r] of releases.entries()) {
-      expect(r.version).toMatch(/^\d+\.\d+\.\d+$/);
-      expect(r.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(r.title).toBeTruthy();
-      expect(r.items.length).toBeGreaterThan(0);
-      for (const it of r.items) expect(["new", "improved", "fixed"]).toContain(it.type);
-      if (i === 0) continue;
-      const prev = releases[i - 1];
-      expect(prev.date >= r.date).toBe(true);
-      const [a, b] = [num(prev.version), num(r.version)];
-      expect(a[0] - b[0] || a[1] - b[1] || a[2] - b[2]).toBeGreaterThan(0);
-    }
+    expect(await (await s.get("/changelog.json")).json()).toEqual([
+      { version: "1.4.0", date: "2026-11-06", title: "GitNut 1.4.0", items: [{ type: "new", text: "Faster graph" }, { type: "fixed", text: "Footer" }] },
+    ]);
   });
 
   test("R-SITE-2: /site.json lists only the configured http(s) sponsor links", async () => {
@@ -172,25 +191,6 @@ describe("site", () => {
     });
     expect(await (await s.get("/site.json")).json()).toEqual({ sponsors: { github: "https://github.com/sponsors/flyingart" } });
   });
-});
-
-test("R-SITE-2: GITNUT_RELEASE_DIR serves release files, nothing outside it", async () => {
-  const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
-  const { join } = await import("node:path");
-  const { tmpdir } = await import("node:os");
-  const dir = mkdtempSync(join(tmpdir(), "gitnut-rel-"));
-  mkdirSync(join(dir, "1.2.3"));
-  writeFileSync(join(dir, "1.2.3", "gitnut-linux-x64"), "BIN");
-  writeFileSync(join(dir, "secret"), "NO");
-  const handle = createSite({ GITNUT_LATEST_VERSION: "1.2.3", GITNUT_DOWNLOAD_BASE_URL: "http://x/releases", GITNUT_RELEASE_DIR: dir });
-  const get = (p: string) => handle(new Request(`http://site${p}`));
-  const ok = await get("/releases/1.2.3/gitnut-linux-x64");
-  expect(ok.status).toBe(200);
-  expect(await ok.text()).toBe("BIN");
-  for (const bad of ["/releases/secret", "/releases/../secret", "/releases/1.2.3/../../secret", "/releases/%2e%2e/secret", "/releases/1.2.3/missing"])
-    expect((await get(bad)).status).toBe(404);
-  // off without the env var
-  expect((await createSite({})(new Request("http://site/releases/1.2.3/gitnut-linux-x64"))).status).toBe(404);
 });
 
 describe("site from GitHub releases", () => {

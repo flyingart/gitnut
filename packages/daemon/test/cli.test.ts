@@ -93,7 +93,7 @@ describe("cli", () => {
 
   test("R-UPD-2: update --check without a manifest URL", () => {
     run(["config", "set", "update.manifestUrl", ""]);
-    const r = run(["update", "--check"], { GITNUT_MANIFEST_URL: "" });
+    const r = run(["update", "--check"]);
     expect(r.code).toBe(1);
     expect(r.out).toContain("updates are off");
   });

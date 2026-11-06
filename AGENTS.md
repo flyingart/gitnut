@@ -81,8 +81,12 @@ daemon build. `main` is protected: work on a branch, open a PR, wait for green C
 
 ## Releases
 
+- All environment variables are in one table in `docs/BUILD.md`. Don't add new ones when an
+  existing one or the manifest can carry the information.
 - `GITNUT_SITE_URL` (in `.env`) is required for every shipped build. It bakes in where updates come
-  from. `--dev` builds have updates off.
+  from: `<site>/manifest.json` lists the download URLs. `--dev` builds have updates off.
+- Desktop builds sign their updater files with `TAURI_SIGNING_PRIVATE_KEY` (in `.env`). The public
+  key in `tauri.conf.json` must never change, or installed apps stop accepting updates.
 - `bun run release <version> [--publish --notes notes.md]` sets the version everywhere, builds the
   binaries and checksums, and publishes the GitHub release `v<version>`.
 - macOS builds sign and notarize with the Developer ID certificate in the Keychain

@@ -295,16 +295,16 @@ token is passed in the URL hash. Live examples: `/examples.html` on any daemon.
 
 ## Updates
 
-1. `bun run release <version> --upload` builds all binaries + `SHA256SUMS` + `manifest.json`
-   and uploads them to `<GITNUT_DOWNLOAD_BASE_URL>/<version>/`.
-2. Set `GITNUT_LATEST_VERSION=<version>` on the website. Its `/manifest.json` now offers it.
-3. Daemons check the manifest baked in at build time (`GITNUT_SITE_URL` or
-   `GITNUT_MANIFEST_URL`, required for builds, see docs/BUILD.md; `gitnut config set
-   update.manifestUrl` overrides it for testing). An update icon shows next to the logo. `gitnut update` or the client's update button downloads the
-   binary for the platform, verifies its SHA-256, replaces the executable and restarts it
-   (a service is restarted by systemd/launchd, otherwise the new binary starts itself).
-4. The daemon serves the web client, so the web client updates with it. The desktop app runs
-   its daemon from `~/.gitnut/bin`, so the same update applies there.
+1. `bun run release <version> --publish --notes notes.md` creates the GitHub release; the website
+   reads GitHub releases, so its `/manifest.json` offers the new version within 10 minutes.
+2. Daemons check `<GITNUT_SITE_URL>/manifest.json` (baked in at build time; `gitnut config set
+   update.manifestUrl` overrides it for testing). An update icon shows next to the logo.
+   `gitnut update` or that icon downloads the binary for the platform, verifies its SHA-256,
+   replaces the executable and restarts it (a service is restarted by systemd/launchd, otherwise
+   the new binary starts itself). The daemon serves the web client, so it updates with it.
+3. The desktop app updates itself too (Tauri updater, signed by our key): it checks every
+   10 minutes, asks "Install and restart", and its new bundled daemon replaces the old one.
+   Settings show the client and desktop app versions at the bottom.
 
 ## Development
 
@@ -326,22 +326,19 @@ bun run dev          # daemon (watch) + web (Vite, :5174) + site (:7431), prints
 Details (all env vars, Coolify setup for the site): [docs/BUILD.md](docs/BUILD.md).
 
 ```sh
-# daemon/CLI binaries, cross-compiled from any OS (web client embedded)
-# GITNUT_SITE_URL (required, put it in .env) = where updates come from
-GITNUT_SITE_URL=https://<site> bun run scripts/build-daemon.ts --targets all --build-web          # -> dist/bin/gitnut-<platform>
-
-# full release folder: binaries + desktop installers already built + SHA256SUMS + manifest.json
-GITNUT_DOWNLOAD_BASE_URL=https://<files> GITNUT_UPLOAD_CMD='rsync -av {dir}/ host:/srv/gitnut/{version}/' \
-  bun run release 0.2.0 --upload                                       # -> release/0.2.0/
+# .env on every build machine (gitignored):
+#   GITNUT_SITE_URL=https://gitnut.dev            where shipped binaries look for updates
+#   TAURI_SIGNING_PRIVATE_KEY=~/.tauri/gitnut.key desktop updater key (desktop builds)
+bun run scripts/build-daemon.ts --targets all --build-web     # -> dist/bin/gitnut-<platform>
+bun run release 0.3.0                                         # -> release/0.3.0/ (+ Linux desktop)
+bun run release 0.3.0 --skip-desktop --publish --notes notes.md   # GitHub release v0.3.0
 ```
 
 Targets: `linux-x64`, `linux-arm64`, `darwin-arm64`, `darwin-x64`, `windows-x64`. The release
-script prints the env vars to set on the site and lists the desktop installers that are
-still missing.
+script lists the desktop files that are still missing (built on the Mac, then copied in).
 
-Website (`packages/site`, Docker): env `GITNUT_LATEST_VERSION`, `GITNUT_DOWNLOAD_BASE_URL`, and
-optional `GITNUT_SITE_URL`, `GITNUT_RELEASE_NOTES`, `GITNUT_PUBLISHED_AT`, `PORT` (7431). Serves
-`/`, `/manifest.json`, `/install.sh`, `/install.ps1`, `/download/<platform>`, `/healthz`.
+Website (`packages/site`, Docker): one required env var, `GITNUT_GITHUB_REPO`; everything else
+(versions, downloads, checksums, changelog, desktop updates) comes from the GitHub releases.
 
 ## Desktop apps (macOS, Windows, Linux)
 
@@ -394,9 +391,9 @@ bun run build:desktop --version 0.2.0
 Unsigned, so SmartScreen warns: More info → Run anyway. WebView2 is preinstalled on
 Windows 10/11.
 
-Copy the installers into the same `release/<version>/` folder before running
-`bun run release <version> --upload` (on any machine), so they get checksums and manifest
-entries.
+Copy the installers (and their updater files and `.sig`s) into the same `release/<version>/`
+folder before running `bun run release <version> --skip-desktop --publish`, so they get
+checksums and land in the GitHub release.
 
 ## Tests
 

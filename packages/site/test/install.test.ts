@@ -22,7 +22,27 @@ const files = Bun.serve({
 const site = Bun.serve({
   port: 0,
   hostname: "127.0.0.1",
-  fetch: createSite({ GITNUT_LATEST_VERSION: "9.9.9", GITNUT_DOWNLOAD_BASE_URL: `http://127.0.0.1:${files.port}/rel` }),
+  // GitHub API stand-in: one release whose files live on the fake host above
+  fetch: createSite({ GITNUT_GITHUB_REPO: "o/r" }, ((url: string) =>
+    String(url).includes("api.github.com/repos/")
+      ? Promise.resolve(
+          Response.json([
+            {
+              tag_name: "v9.9.9",
+              name: "9.9.9",
+              body: "",
+              draft: false,
+              prerelease: false,
+              published_at: "2026-11-06T10:00:00Z",
+              assets: ["SHA256SUMS", ...["linux-x64", "linux-arm64", "darwin-arm64", "darwin-x64"].map((p) => `gitnut-${p}`)].map((f) => ({
+                name: f,
+                url: `https://api.github.com/assets/${f}`,
+                browser_download_url: `http://127.0.0.1:${files.port}/rel/9.9.9/${f}`,
+              })),
+            },
+          ]),
+        )
+      : fetch(url)) as unknown as typeof fetch),
 });
 const tmp = mkdtempSync(join(tmpdir(), "gitnut-install-"));
 afterAll(() => {

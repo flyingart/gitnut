@@ -10,7 +10,7 @@ import { GitnutRoot, useCx, type StyleProps } from "./root";
 import { baseExtensions, languageFor } from "./diff/cm";
 import { lineFirstDiff } from "./diff/lineDiff";
 import { SideBySideDiff } from "./diff/sideBySide";
-import { Empty, formatSize, IconButton, Segmented, Spinner } from "./ui";
+import { Empty, ErrorBoundary, formatSize, IconButton, Segmented, Spinner } from "./ui";
 import { useViewOptions } from "./viewOptions";
 import { ImageDiff } from "./ImageDiff";
 
@@ -67,6 +67,15 @@ export const sideLabel = (s: FileSide | null | undefined) =>
 
 /** IntelliJ-style diff: side-by-side with connector bands (default) or unified, syntax and word highlights. */
 export function DiffViewer(props: DiffViewerProps) {
+  // a rendering bug in one file must not take the whole client down
+  return (
+    <ErrorBoundary key={`${props.repoId}:${props.change?.path ?? props.path ?? ""}`} fallback={(e) => <Empty icon={<FileDiff size={22} />} title="Couldn't show this diff">{e.message}</Empty>}>
+      <DiffViewerInner {...props} />
+    </ErrorBoundary>
+  );
+}
+
+function DiffViewerInner(props: DiffViewerProps) {
   const cx = useCx();
   const { change, repoId } = props;
   const direct = props.before !== undefined || props.after !== undefined;

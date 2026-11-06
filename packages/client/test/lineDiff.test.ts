@@ -34,3 +34,22 @@ test("R-DIFF-4: word-level changes inside a modified line", () => {
   expect(ch.length).toBe(1);
   expect("keep\nfoo bar baz\nkeep".slice(ch[0].fromA, ch[0].toA)).toBe("bar");
 });
+
+test("R-DIFF-4: changes stay inside both texts and rebuild the new text (also without final newlines)", () => {
+  // tiny deterministic PRNG so failures reproduce
+  let seed = 7;
+  const rnd = (n: number) => ((seed = (seed * 1103515245 + 12345) % 2 ** 31) % n);
+  const doc = () => Array.from({ length: rnd(6) }, () => "abc"[rnd(3)].repeat(1 + rnd(2))).join("\n") + (rnd(2) ? "\n" : "");
+  const cases: [string, string][] = [["a\nb", "a\nb\nc"], ["a\nb\nc", "a"], ["a", "a\nb\nc"], ["", "x"], ["x", ""]];
+  for (let i = 0; i < 400; i++) cases.push([doc(), doc()]);
+  for (const [a, b] of cases) {
+    let out = "";
+    let pos = 0;
+    for (const c of lineFirstDiff(a, b)) {
+      expect(c.fromA >= pos && c.fromA <= c.toA && c.toA <= a.length && c.fromB <= c.toB && c.toB <= b.length).toBe(true);
+      out += a.slice(pos, c.fromA) + b.slice(c.fromB, c.toB);
+      pos = c.toA;
+    }
+    expect(out + a.slice(pos)).toBe(b);
+  }
+});

@@ -24,8 +24,11 @@ export function lineFirstDiff(a: string, b: string, ignoreWhitespace = false): C
   const startsB = lineStarts(lb);
   const out: Change[] = [];
   for (const [a1, a2, b1, b2] of lineBlocks(la.map(id), lb.map(id))) {
-    const fA = startsA[a1], tA = Math.min(startsA[a2], a.length);
-    const fB = startsB[b1], tB = Math.min(startsB[b2], b.length);
+    let fA = startsA[a1], fB = startsB[b1];
+    const tA = Math.min(startsA[a2], a.length), tB = Math.min(startsB[b2], b.length);
+    // A block after the last line of a side without a final newline starts at that newline
+    // ("a\nb" -> "a\nb\nc" inserts "\nc" at 3), so no position lies past the end of the text.
+    if (fA > a.length || fB > b.length) fA--, fB--;
     if (a2 === a1 || b2 === b1 || tA - fA + tB - fB > MAX_WORD_BLOCK) {
       out.push(new Change(fA, tA, fB, tB));
       continue;

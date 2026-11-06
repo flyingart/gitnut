@@ -25,6 +25,8 @@ export {
 export type { UseGraphOptions, GraphData, FileDiffRequest, UpdatePhase } from "./hooks";
 export { useViewOptions, getViewOptions, setViewOptions, setViewOptionsStorageKey, DEFAULT_VIEW_OPTIONS } from "./viewOptions";
 export type { ViewOptions, CommitColumn } from "./viewOptions";
+export { CLIENT_VERSION } from "./version";
+export { ErrorBoundary } from "./ui";
 export { ACCENTS, accentTheme, darkTheme, lightTheme, resolveTheme, themeToCssVars, rowHeightOf } from "./theme";
 export type { AccentName, GitnutTheme, GitnutThemeInput } from "./theme";
 export { GitnutRoot, useGitnutTheme } from "./root";

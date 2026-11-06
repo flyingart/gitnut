@@ -62,6 +62,18 @@
       "deb": {
         "section": "devel"
       }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE2Q0U1Mzg4NTlCNkY3NUYKUldSZjk3WlppRlBPcHQ5eCtJSVNHZ3VxNjE2L1RYVHRkWThQVnRidHZlbkNxd1ZiNzF5c3g3RzkK",
+      "endpoints": [
+        "https://gitnut.dev/desktop/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

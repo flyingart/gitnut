@@ -3,7 +3,9 @@
 //! On start: make sure `<GITNUT_HOME or ~/.gitnut>/bin/gitnut` exists and is at least as new as
 //! the bundled sidecar, start `gitnut serve` when no daemon runs, then point the main window at
 //! `<daemon url>/?token=<token>`. The daemon's web client updates that copy in place
-//! (`update.apply`), so the app keeps using the newest daemon. The shell itself has no updater.
+//! (`update.apply`). The app itself updates with Tauri's updater (signed by our key, from
+//! https://gitnut.dev/desktop/latest.json): it asks, installs, stops the daemon it started and
+//! relaunches, and the new app's bundled daemon then replaces the old one.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -12,13 +14,19 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use tauri::webview::PageLoadEvent;
-use tauri::{Manager, RunEvent, Url, WebviewWindow};
+use tauri::{AppHandle, Manager, RunEvent, Url, WebviewWindow};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
+use tauri_plugin_updater::UpdaterExt;
 
 const EXE: &str = std::env::consts::EXE_SUFFIX;
 const START_TIMEOUT: Duration = Duration::from_secs(30);
+const UPDATE_FIRST_CHECK: Duration = Duration::from_secs(15);
+const UPDATE_EVERY: Duration = Duration::from_secs(10 * 60);
 
 /// Set when this app spawned `gitnut serve`, so quitting stops it again.
 static STARTED_DAEMON: AtomicBool = AtomicBool::new(false);
+/// Version the user answered "Later" for: not asked again until the app restarts.
+static POSTPONED: Mutex<Option<String>> = Mutex::new(None);
 /// Last startup error, re-shown if the loading page (re)loads after it was reported.
 static LAST_ERROR: Mutex<Option<(String, String)>> = Mutex::new(None);
 
@@ -206,6 +214,8 @@ fn start(window: &WebviewWindow) -> Result<Url, (String, String)> {
     if !token.is_empty() {
         url.query_pairs_mut().append_pair("token", &token);
     }
+    // the web client shows it in Settings
+    url.query_pairs_mut().append_pair("app", env!("CARGO_PKG_VERSION"));
     Ok(url)
 }
 
@@ -230,10 +240,61 @@ fn stop_daemon() {
     }
 }
 
+/// Check for a new app version; on "Install and restart" install it and relaunch.
+async fn check_update(app: &AppHandle) -> Result<(), String> {
+    let Some(update) = app.updater().map_err(|e| e.to_string())?.check().await.map_err(|e| e.to_string())? else {
+        return Ok(());
+    };
+    if POSTPONED.lock().unwrap().as_deref() == Some(update.version.as_str()) {
+        return Ok(());
+    }
+    let notes = update.body.clone().unwrap_or_default();
+    let msg = format!(
+        "GitNut {} is available (you have {}).\n\n{}\n\nInstall it now? GitNut restarts afterwards.",
+        update.version,
+        update.current_version,
+        notes.lines().filter(|l| !l.trim().is_empty() && !l.starts_with('#')).take(6).collect::<Vec<_>>().join("\n")
+    );
+    let (tx, rx) = std::sync::mpsc::channel();
+    app.dialog()
+        .message(msg)
+        .title("Update available")
+        .buttons(MessageDialogButtons::OkCancelCustom("Install and restart".into(), "Later".into()))
+        .show(move |ok| {
+            let _ = tx.send(ok);
+        });
+    if !tauri::async_runtime::spawn_blocking(move || rx.recv().unwrap_or(false)).await.unwrap_or(false) {
+        *POSTPONED.lock().unwrap() = Some(update.version.clone());
+        return Ok(());
+    }
+    update.download_and_install(|_, _| {}, || {}).await.map_err(|e| e.to_string())?;
+    // The new app ships a newer daemon: stop ours so the relaunched app installs and starts it.
+    stop_daemon();
+    app.restart();
+}
+
+fn spawn_update_checks(app: AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        tokio_sleep(UPDATE_FIRST_CHECK).await;
+        loop {
+            if let Err(e) = check_update(&app).await {
+                eprintln!("gitnut-desktop: update check failed: {e}");
+            }
+            tokio_sleep(UPDATE_EVERY).await;
+        }
+    });
+}
+
+async fn tokio_sleep(d: Duration) {
+    let _ = tauri::async_runtime::spawn_blocking(move || std::thread::sleep(d)).await;
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .on_page_load(|webview, payload| {
             // The local loading page is served from tauri:// (or http://tauri.localhost on Windows).
             let local = payload.url().host_str().map_or(true, |h| h == "localhost" || h == "tauri.localhost");
@@ -244,6 +305,7 @@ pub fn run() {
             }
         })
         .setup(|app| {
+            spawn_update_checks(app.handle().clone());
             let window = app.get_webview_window("main").expect("main window");
             std::thread::spawn(move || match start(&window) {
                 Ok(url) => {

@@ -2,6 +2,8 @@
 // Build the Tauri desktop app for the host OS (R-UPD-5, R-UPD-6).
 //   bun run build:desktop [--version X] [--target <rust triple>] [--sidecar <gitnut binary>] [--no-notarize]
 // macOS: signs with your "Developer ID Application" certificate and notarizes the .dmg (scripts/mac-signing.ts).
+// Desktop updater: signs the update files with TAURI_SIGNING_PRIVATE_KEY (+ _PASSWORD) and copies them
+// with their .sig next to the installers; --no-updater builds without (local tests).
 // Builds web + daemon for the target, bundles it as the sidecar, runs `tauri build` and copies
 // the installers to release/<version>/ with the names from packages/commons/src/assets.ts.
 import { chmodSync, copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
@@ -47,7 +49,7 @@ function runLive(cmd: string[], cwd = ROOT, extraEnv: Record<string, string | un
 
 async function main() {
   const { values } = parseArgs({
-    options: { version: { type: "string" }, target: { type: "string" }, sidecar: { type: "string" }, "no-notarize": { type: "boolean", default: false } },
+    options: { version: { type: "string" }, target: { type: "string" }, sidecar: { type: "string" }, "no-notarize": { type: "boolean", default: false }, "no-updater": { type: "boolean", default: false } },
   });
   const version: string = values.version ?? (await Bun.file(join(TAURI, "tauri.conf.json")).json()).version;
   const host = /^host: (.+)$/m.exec(run(["rustc", "-vV"]))?.[1]?.trim();
@@ -56,6 +58,11 @@ async function main() {
   if (!platform) throw new Error(`unsupported target ${triple}`);
   const assets = DESKTOP_ASSETS.filter((a) => a.platform === platform);
   if (!assets.length) throw new Error(`no desktop installers are defined for ${platform}`);
+
+  const updater = !values["no-updater"];
+  if (updater && !process.env.TAURI_SIGNING_PRIVATE_KEY) {
+    throw new Error("set TAURI_SIGNING_PRIVATE_KEY (path or content of the updater key, in .env) or pass --no-updater; see docs/BUILD.md");
+  }
 
   // 0. macOS: certificate and notary profile first, so the questions come before the long build
   // signing applies to macOS targets (built on a Mac); a Windows target on a Mac is not codesigned
@@ -81,8 +88,10 @@ async function main() {
   else if (mac) run(["codesign", "--force", "--sign", "-", dest]);
 
   // 2. Tauri bundles
-  const bundles = [...new Set(assets.map((a) => a.bundle))].join(",");
-  const tauri = ["bunx", "tauri", "build", "--bundles", bundles, "--config", JSON.stringify({ version })];
+  // macOS: the "app" bundle is where Tauri makes the updater's .app.tar.gz
+  const bundles = [...new Set([...(platform.startsWith("darwin") && updater ? ["app"] : []), ...assets.map((a) => a.bundle)])].join(",");
+  const config = updater ? { version } : { version, bundle: { createUpdaterArtifacts: false } };
+  const tauri = ["bunx", "tauri", "build", "--bundles", bundles, "--config", JSON.stringify(config)];
   if (values.target) tauri.push("--target", triple);
   // Windows installer from macOS / Linux: Tauri's NSIS cross-build (cargo install cargo-xwin; brew install nsis llvm).
   if (platform.startsWith("windows") && process.platform !== "win32") tauri.push("--runner", "cargo-xwin");
@@ -105,8 +114,25 @@ async function main() {
     const target = join(out, a.file(version));
     copyFileSync(found, target);
     if (notary && target.endsWith(".dmg")) notarize(target, notary);
+    // Tauri updater file + signature: the installer itself (Windows, AppImage) or the .app.tar.gz (macOS)
+    if (updater && a.updater) {
+      const upd = a.updater.file(version);
+      const src = upd === a.file(version) ? found : newest(join(bundleRoot, "macos"), ".app.tar.gz");
+      if (!src || !existsSync(`${src}.sig`)) throw new Error(`no updater file / signature for ${a.label} (${src ?? "missing .app.tar.gz"})`);
+      if (src !== found) copyFileSync(src, join(out, upd));
+      copyFileSync(`${src}.sig`, join(out, `${upd}.sig`));
+    }
     console.log(`${a.label}: ${target} (${(statSync(target).size / 1e6).toFixed(1)} MB)${signing && mac ? notary ? ", signed + notarized" : ", signed" : ""}`);
   }
+}
+
+/** Newest file in `dir` ending with `ext`. */
+function newest(dir: string, ext: string): string | undefined {
+  if (!existsSync(dir)) return undefined;
+  return readdirSync(dir)
+    .filter((f) => f.endsWith(ext))
+    .map((f) => join(dir, f))
+    .sort((x, y) => statSync(y).mtimeMs - statSync(x).mtimeMs)[0];
 }
 
 if (import.meta.main) {

@@ -8,7 +8,15 @@ const PUBLIC = join(import.meta.dir, "..", "public");
 // The README screenshots (docs/screenshots) double as the site gallery; the Docker image copies them
 // into public/screenshots.
 const SHOTS = existsSync(join(PUBLIC, "screenshots")) ? join(PUBLIC, "screenshots") : join(import.meta.dir, "..", "..", "..", "docs", "screenshots");
-const PAGES: Record<string, string> = { "/": "/index.html", "/changelog": "/changelog.html", "/changelog/": "/changelog.html" };
+const PAGES: Record<string, string> = {
+  "/": "/index.html",
+  "/changelog": "/changelog.html",
+  "/changelog/": "/changelog.html",
+  "/privacy": "/privacy.html",
+  "/privacy/": "/privacy.html",
+  "/terms": "/terms.html",
+  "/terms/": "/terms.html",
+};
 
 /**
  * Site request handler (R-SITE-2). GitHub releases are the single source of truth: with
@@ -147,7 +155,7 @@ export function createSite(env: Record<string, string | undefined> = process.env
     }
     if (pathname === "/sitemap.xml") {
       const lastmod = latest ? `<lastmod>${latest.date}</lastmod>` : "";
-      const urls = ["/", "/changelog"].map((p) => `  <url><loc>${canonical}${p}</loc>${lastmod}</url>`).join("\n");
+      const urls = ["/", "/changelog", "/privacy", "/terms"].map((p) => `  <url><loc>${canonical}${p}</loc>${lastmod}</url>`).join("\n");
       const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
       return new Response(xml, { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=3600" } });
     }

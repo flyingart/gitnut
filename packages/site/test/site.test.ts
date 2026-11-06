@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { readdir } from "node:fs/promises";
+import { join } from "node:path";
 import { createSite } from "../src/server";
 
 const SUMS = `${"a".repeat(64)}  gitnut-linux-x64\n${"b".repeat(64)}  GitNut-1.4.0-darwin-arm64.dmg\n`;
@@ -116,14 +118,14 @@ describe("site", () => {
     expect(await (await site({}).get("/robots.txt")).text()).toContain("Sitemap: https://gitnut.dev/sitemap.xml");
   });
 
-  test("R-SITE-3: /sitemap.xml lists / and /changelog with the release date", async () => {
+  test("R-SITE-3: /sitemap.xml lists the pages with the release date", async () => {
     const res = await site().get("/sitemap.xml");
     expect(res.headers.get("content-type")).toStartWith("application/xml");
     const xml = await res.text();
     expect(xml).toStartWith('<?xml version="1.0" encoding="UTF-8"?>');
     expect(xml).toMatch(/<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">[\s\S]*<\/urlset>\n$/);
     const locs = [...xml.matchAll(/<url><loc>([^<]+)<\/loc><lastmod>2026-11-06<\/lastmod><\/url>/g)].map((m) => m[1]);
-    expect(locs).toEqual(["https://gitnut.example.com/", "https://gitnut.example.com/changelog"]);
+    expect(locs).toEqual(["/", "/changelog", "/privacy", "/terms"].map((p) => `https://gitnut.example.com${p}`));
     // no release: no lastmod, default origin
     expect(await (await site({}).get("/sitemap.xml")).text()).toContain("<url><loc>https://gitnut.dev/changelog</loc></url>");
   });
@@ -148,6 +150,36 @@ describe("site", () => {
     const og = await site().get("/og.png");
     expect(og.headers.get("content-type")).toBe("image/png");
     expect((await og.arrayBuffer()).byteLength).toBeLessThan(400_000);
+  });
+
+  test("R-SITE-1: /privacy and /terms serve their pages, linked from the footer", async () => {
+    const s = site();
+    for (const [page, h1] of [["privacy", "Privacy policy"], ["terms", "Terms of use"]]) {
+      for (const path of [`/${page}`, `/${page}/`]) {
+        const res = await s.get(path);
+        expect(res.status).toBe(200);
+        expect(res.headers.get("content-type")).toContain("text/html");
+        const html = await res.text();
+        expect(html).toContain(`<h1>${h1}</h1>`);
+        expect(html).toContain(`<link rel="canonical" href="https://gitnut.dev/${page}">`);
+      }
+    }
+    for (const path of ["/", "/changelog", "/privacy", "/terms"]) {
+      const html = await (await s.get(path)).text();
+      expect(html).toContain('<a href="/privacy">Privacy</a>');
+      expect(html).toContain('<a href="/terms">Terms</a>');
+    }
+  });
+
+  test("R-SITE-1: every HTML page loads the cookieless Rybbit script exactly once", async () => {
+    const pages = (await readdir(join(import.meta.dir, "..", "public"))).filter((f) => f.endsWith(".html"));
+    expect(pages).toEqual(expect.arrayContaining(["index.html", "changelog.html", "privacy.html", "terms.html"]));
+    for (const page of pages) {
+      const html = await Bun.file(join(import.meta.dir, "..", "public", page)).text();
+      const head = html.slice(0, html.indexOf("</head>"));
+      expect({ page, count: html.split("https://pulse.flyingart.dev/api/script.js?siteId=2f92cca69f3e").length - 1 }).toEqual({ page, count: 1 });
+      expect(head).toContain('<script src="https://pulse.flyingart.dev/api/script.js?siteId=2f92cca69f3e" defer></script>');
+    }
   });
 
   test("R-SITE-2: site URL falls back to forwarded headers", async () => {

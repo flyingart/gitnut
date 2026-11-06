@@ -138,6 +138,9 @@ component) connects to many daemons and shows all their projects.
 - **R-SITE-3** Pages carry canonical, Open Graph (og:image), Twitter and JSON-LD tags; the site
   serves `/robots.txt` and `/sitemap.xml` on `GITNUT_SITE_URL`, and explains how to open the
   unsigned builds on macOS, Windows and Linux.
+- **R-SITE-4** Cookieless self-hosted analytics (Rybbit) on every page, with download and
+  copy-command events; `/privacy` and `/terms` pages linked from the footer. The app and daemon
+  send no telemetry.
 
 ## SDK / embedding (packages/client)
 

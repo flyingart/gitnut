@@ -19,9 +19,18 @@ $("hero-cmd-text").textContent = CMD.sh;
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest(".copy");
   if (!btn) return;
-  await navigator.clipboard?.writeText(btn.parentElement.querySelector("code").textContent);
+  const cmd = btn.parentElement.querySelector("code").textContent;
+  window.rybbit?.event("copy_command", { cmd });
+  await navigator.clipboard?.writeText(cmd);
   btn.textContent = "Copied";
   setTimeout(() => (btn.textContent = "Copy"), 1500);
+});
+
+// Download links are also set by this script (detected platform, notes, checksums), so one listener
+// tracks them all as Rybbit events.
+document.addEventListener("click", (e) => {
+  const a = e.target.closest('a[href^="/download/"], a[href*="/releases/"]');
+  if (a) window.rybbit?.event("download", { file: new URL(a.href).pathname.split("/").pop() });
 });
 
 // Install help tabs (WAI-ARIA tabs: click, or arrow keys inside the tab list).

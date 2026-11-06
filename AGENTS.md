@@ -98,4 +98,4 @@ daemon build. `main` is protected: work on a branch, open a PR, wait for green C
 
 - Commit secrets, `.env`, tokens, private hostnames or IPs, or personal paths.
 - Push to `main` directly, force-push shared branches, or rewrite published tags.
-- Add tracking or telemetry.
+- Add tracking or telemetry to the app or daemon (the website uses cookieless Rybbit, see /privacy).

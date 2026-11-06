@@ -8,44 +8,21 @@
 // the installers to release/<version>/ with the names from packages/commons/src/assets.ts.
 import { chmodSync, copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { parseArgs } from "node:util";
-import { DESKTOP_ASSETS, binaryName, type Platform } from "@gitnut/commons";
+import { DESKTOP_ASSETS, RUST_TRIPLES, binaryName } from "@gitnut/commons";
+import { ROOT, requireSiteUrl, run as runIn } from "./lib";
 import { notarize, notaryProfile, pickIdentity, signBinary } from "./mac-signing";
 
-const ROOT = resolve(import.meta.dir, "..");
 const DESKTOP = join(ROOT, "packages", "desktop");
 const TAURI = join(DESKTOP, "src-tauri");
 
-const TRIPLES: Record<string, Platform> = {
-  "x86_64-unknown-linux-gnu": "linux-x64",
-  "aarch64-unknown-linux-gnu": "linux-arm64",
-  "aarch64-apple-darwin": "darwin-arm64",
-  "x86_64-apple-darwin": "darwin-x64",
-  "x86_64-pc-windows-msvc": "windows-x64",
-};
 const EXT: Record<string, string> = { dmg: ".dmg", nsis: "-setup.exe", appimage: ".AppImage", deb: ".deb" };
 
 // rustup installs to ~/.cargo/bin, which a fresh shell may not have on PATH yet.
 const cargoBin = join(homedir(), ".cargo", "bin");
-const env = { ...process.env, PATH: `${cargoBin}${process.platform === "win32" ? ";" : ":"}${process.env.PATH}` };
-
-function run(cmd: string[], cwd = ROOT, extraEnv: Record<string, string | undefined> = {}): string {
-  console.log(`$ ${cmd.join(" ")}`);
-  const p = Bun.spawnSync(cmd, { cwd, env: { ...env, ...extraEnv }, stdout: "pipe", stderr: "inherit" });
-  const out = p.stdout.toString();
-  if (p.exitCode !== 0) {
-    process.stdout.write(out);
-    throw new Error(`${cmd[0]} exited with ${p.exitCode}`);
-  }
-  return out;
-}
-
-function runLive(cmd: string[], cwd = ROOT, extraEnv: Record<string, string | undefined> = {}) {
-  console.log(`$ ${cmd.join(" ")}`);
-  const p = Bun.spawnSync(cmd, { cwd, env: { ...env, ...extraEnv }, stdio: ["inherit", "inherit", "inherit"] });
-  if (p.exitCode !== 0) throw new Error(`${cmd[0]} exited with ${p.exitCode}`);
-}
+const PATH = `${cargoBin}${process.platform === "win32" ? ";" : ":"}${process.env.PATH}`;
+const run = (cmd: string[], opts: { live?: boolean; cwd?: string; env?: Record<string, string> } = {}) => runIn(cmd, { ...opts, env: { PATH, ...opts.env } });
 
 async function main() {
   const { values } = parseArgs({
@@ -54,8 +31,9 @@ async function main() {
   const version: string = values.version ?? (await Bun.file(join(TAURI, "tauri.conf.json")).json()).version;
   const host = /^host: (.+)$/m.exec(run(["rustc", "-vV"]))?.[1]?.trim();
   const triple = values.target ?? host!;
-  const platform = TRIPLES[triple];
+  const platform = RUST_TRIPLES[triple];
   if (!platform) throw new Error(`unsupported target ${triple}`);
+  if (!values.sidecar) requireSiteUrl(); // build-daemon.ts needs it; fail before the questions and the long build
   const assets = DESKTOP_ASSETS.filter((a) => a.platform === platform);
   if (!assets.length) throw new Error(`no desktop installers are defined for ${platform}`);
 
@@ -67,15 +45,15 @@ async function main() {
   // 0. macOS: certificate and notary profile first, so the questions come before the long build
   // signing applies to macOS targets (built on a Mac); a Windows target on a Mac is not codesigned
   const mac = platform.startsWith("darwin") && process.platform === "darwin";
-  const signing = mac ? pickIdentity(ROOT) : null;
-  const notary = signing && !values["no-notarize"] ? notaryProfile(signing.team) : null;
+  const signing = mac ? await pickIdentity() : null;
+  const notary = signing && !values["no-notarize"] ? await notaryProfile(signing.team) : null;
 
   // 1. daemon (with the web client baked in) for this target
   let sidecar = values.sidecar;
   if (!sidecar) {
     const args = ["bun", "run", "scripts/build-daemon.ts", "--targets", platform, "--out", "dist/bin", "--version", version];
     if (existsSync(join(ROOT, "packages", "web", "index.html"))) args.push("--build-web");
-    runLive(args);
+    run(args, { live: true });
     sidecar = join(ROOT, "dist", "bin", binaryName(platform));
   }
   const dest = join(TAURI, "binaries", `gitnut-${triple}${platform.startsWith("windows") ? ".exe" : ""}`);
@@ -99,7 +77,7 @@ async function main() {
   // Windows installer from macOS / Linux: Tauri's NSIS cross-build (cargo install cargo-xwin; brew install nsis llvm).
   if (platform.startsWith("windows") && process.platform !== "win32") tauri.push("--runner", "cargo-xwin");
   // No certificate: "-" makes Tauri ad hoc sign the whole .app (otherwise x64 bundles end up unsigned).
-  runLive(tauri, DESKTOP, mac ? { APPLE_SIGNING_IDENTITY: signing?.identity ?? "-" } : {});
+  run(tauri, { live: true, cwd: DESKTOP, env: mac ? { APPLE_SIGNING_IDENTITY: signing?.identity ?? "-" } : {} });
 
   // 3. copy installers to release/<version>/
   const bundleRoot = join(TAURI, "target", ...(values.target ? [triple] : []), "release", "bundle");
@@ -107,12 +85,7 @@ async function main() {
   mkdirSync(out, { recursive: true });
   for (const a of assets) {
     const dir = join(bundleRoot, a.bundle);
-    const found = existsSync(dir)
-      ? readdirSync(dir)
-          .filter((f) => f.endsWith(EXT[a.bundle]) && f.includes(version))
-          .map((f) => join(dir, f))
-          .sort((x, y) => statSync(y).mtimeMs - statSync(x).mtimeMs)[0]
-      : undefined;
+    const found = newest(dir, (f) => f.endsWith(EXT[a.bundle]) && f.includes(version));
     if (!found) throw new Error(`no ${a.bundle} installer for ${version} in ${dir}`);
     const target = join(out, a.file(version));
     copyFileSync(found, target);
@@ -120,7 +93,7 @@ async function main() {
     // Tauri updater file + signature: the installer itself (Windows, AppImage) or the .app.tar.gz (macOS)
     if (updater && a.updater) {
       const upd = a.updater.file(version);
-      const src = upd === a.file(version) ? found : newest(join(bundleRoot, "macos"), ".app.tar.gz");
+      const src = upd === a.file(version) ? found : newest(join(bundleRoot, "macos"), (f) => f.endsWith(".app.tar.gz"));
       if (!src || !existsSync(`${src}.sig`)) throw new Error(`no updater file / signature for ${a.label} (${src ?? "missing .app.tar.gz"})`);
       if (src !== found) copyFileSync(src, join(out, upd));
       copyFileSync(`${src}.sig`, join(out, `${upd}.sig`));
@@ -129,11 +102,11 @@ async function main() {
   }
 }
 
-/** Newest file in `dir` ending with `ext`. */
-function newest(dir: string, ext: string): string | undefined {
+/** Newest file in `dir` whose name `match` accepts. */
+function newest(dir: string, match: (name: string) => boolean): string | undefined {
   if (!existsSync(dir)) return undefined;
   return readdirSync(dir)
-    .filter((f) => f.endsWith(ext))
+    .filter(match)
     .map((f) => join(dir, f))
     .sort((x, y) => statSync(y).mtimeMs - statSync(x).mtimeMs)[0];
 }

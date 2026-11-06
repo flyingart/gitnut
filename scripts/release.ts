@@ -8,12 +8,12 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { parseArgs } from "node:util";
 import * as p from "@clack/prompts";
-import { DESKTOP_ASSETS, type Platform, SHA256SUMS, binaryName, formatSha256Sums, parseSha256Sums, platformOf, releaseFiles } from "@gitnut/commons";
+import { DESKTOP_ASSETS, RUST_TRIPLES, SHA256SUMS, binaryName, formatSha256Sums, parseSha256Sums, platformOf, releaseFiles } from "@gitnut/commons";
+import { ROOT, ask, confirm, has, interactive, requireSiteUrl, run } from "./lib";
 
-const ROOT = resolve(import.meta.dir, "..");
 const { values: flags, positionals } = parseArgs({
   allowPositionals: true,
   options: {
@@ -24,29 +24,8 @@ const { values: flags, positionals } = parseArgs({
     "no-cli": { type: "boolean" },
   },
 });
-const interactive = process.stdin.isTTY && !flags.yes;
 
 // ---- small helpers -------------------------------------------------------------------------
-
-function run(cmd: string[], opts: { live?: boolean; cwd?: string; allowFail?: boolean } = {}): string {
-  if (opts.live) p.log.step(`$ ${cmd.join(" ")}`);
-  const r = Bun.spawnSync(cmd, { cwd: opts.cwd ?? ROOT, stdio: opts.live ? ["inherit", "inherit", "inherit"] : ["ignore", "pipe", "pipe"] });
-  if (r.exitCode !== 0 && !opts.allowFail) throw new Error(`${cmd.slice(0, 3).join(" ")} failed${opts.live ? "" : `: ${String(r.stderr ?? "").trim()}`}`);
-  return opts.live ? "" : String(r.stdout ?? "").trim();
-}
-const has = (bin: string) => Bun.spawnSync(["sh", "-c", `command -v ${bin}`], { stdio: ["ignore", "ignore", "ignore"] }).exitCode === 0;
-
-async function ask<T>(v: Promise<T | symbol>): Promise<Exclude<T, symbol>> {
-  const r = await v;
-  if (p.isCancel(r)) {
-    p.cancel("Cancelled.");
-    process.exit(1);
-  }
-  return r as Exclude<T, symbol>;
-}
-async function confirm(message: string, initialValue = true): Promise<boolean> {
-  return interactive ? ask(p.confirm({ message, initialValue })) : initialValue;
-}
 
 const pkgVersion = () => JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version as string;
 const isVersion = (v: string) => /^\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?$/.test(v);
@@ -168,7 +147,7 @@ async function build() {
     run(["git", "pull", "-q", "--ff-only"]);
     if (pkgVersion() !== version) throw new Error(`main is still at ${pkgVersion()}: wait until the version PR of ${version} is merged`);
   }
-  if (!process.env.GITNUT_SITE_URL) throw new Error("set GITNUT_SITE_URL in .env (e.g. GITNUT_SITE_URL=https://gitnut.dev): binaries need to know where updates come from");
+  requireSiteUrl();
 
   const uploaded = new Set(assetsOf(version));
   const cliDone = PLATFORMS_FILES(version).every((f) => uploaded.has(f));
@@ -195,8 +174,8 @@ async function build() {
   for (const t of desktop) {
     const args = ["bun", "run", "scripts/build-desktop.ts", "--version", version, "--target", t];
     // reuse the CLI binary just built for this target instead of building it again
-    const sidecar = TRIPLE_PLATFORM[t] && join(dir, binaryName(TRIPLE_PLATFORM[t]));
-    if (sidecar && existsSync(sidecar)) args.push("--sidecar", sidecar);
+    const sidecar = join(dir, binaryName(RUST_TRIPLES[t]));
+    if (existsSync(sidecar)) args.push("--sidecar", sidecar);
     run(args, { live: true });
   }
 
@@ -215,13 +194,6 @@ async function build() {
   const missing = expectedFiles(version).filter((f) => !new Set(assetsOf(version)).has(f));
   p.note(missing.length ? `Still missing (build them on another machine):\n  ${missing.join("\n  ")}` : "Every file is there: run `bun run release publish`.", `v${version}`);
 }
-
-const TRIPLE_PLATFORM: Record<string, Platform> = {
-  "aarch64-apple-darwin": "darwin-arm64",
-  "x86_64-apple-darwin": "darwin-x64",
-  "x86_64-pc-windows-msvc": "windows-x64",
-  "x86_64-unknown-linux-gnu": "linux-x64",
-};
 
 const PLATFORMS_FILES = (version: string) => Object.entries(releaseFiles(version)).filter(([k]) => !k.startsWith("desktop-")).map(([, f]) => f);
 

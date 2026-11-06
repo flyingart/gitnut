@@ -11,6 +11,15 @@ export const PLATFORMS: Platform[] = [
   "windows-x64",
 ];
 
+/** Rust target triple of each platform (desktop builds and their sidecar). */
+export const RUST_TRIPLES: Record<string, Platform> = {
+  "x86_64-unknown-linux-gnu": "linux-x64",
+  "aarch64-unknown-linux-gnu": "linux-arm64",
+  "aarch64-apple-darwin": "darwin-arm64",
+  "x86_64-apple-darwin": "darwin-x64",
+  "x86_64-pc-windows-msvc": "windows-x64",
+};
+
 export function platformOf(os: string, arch: string): Platform | null {
   const o = os === "win32" ? "windows" : os;
   const a = arch === "x86_64" || arch === "amd64" ? "x64" : arch === "aarch64" ? "arm64" : arch;

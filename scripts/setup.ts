@@ -5,29 +5,22 @@
 // offers to fix what is missing. Prints install hints for anything it can't do itself.
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 import * as p from "@clack/prompts";
+import { ROOT, ask, confirm, has, ok, run } from "./lib";
 
-const ROOT = resolve(import.meta.dir, "..");
 const ENV = join(ROOT, ".env");
 const mac = process.platform === "darwin";
 const win = process.platform === "win32";
 
-const ok = (cmd: string[]) => Bun.spawnSync(cmd, { stdio: ["ignore", "ignore", "ignore"] }).exitCode === 0;
+/** Trimmed stdout, "" when the command is missing or fails. */
 const out = (cmd: string[]) => {
-  const r = Bun.spawnSync(cmd, { stdio: ["ignore", "pipe", "ignore"] });
-  return r.exitCode === 0 ? String(r.stdout ?? "").trim() : "";
-};
-const has = (bin: string) => (win ? ok(["where", bin]) : ok(["sh", "-c", `command -v ${bin}`]));
-
-async function ask<T>(v: Promise<T | symbol>): Promise<Exclude<T, symbol>> {
-  const r = await v;
-  if (p.isCancel(r)) {
-    p.cancel("Cancelled.");
-    process.exit(1);
+  try {
+    return run(cmd);
+  } catch {
+    return "";
   }
-  return r as Exclude<T, symbol>;
-}
+};
 
 function readEnv(): Record<string, string> {
   if (!existsSync(ENV)) return {};
@@ -61,7 +54,7 @@ async function main() {
   check("git", has("git"), "install git");
   check("gh (GitHub CLI)", has("gh"), mac ? "brew install gh" : win ? "winget install GitHub.cli" : "https://cli.github.com");
   if (has("gh") && !ok(["gh", "auth", "status"])) {
-    if (await ask(p.confirm({ message: "gh is not logged in. Log in now?" }))) Bun.spawnSync(["gh", "auth", "login"], { stdio: ["inherit", "inherit", "inherit"] });
+    if (await confirm("gh is not logged in. Log in now?")) ok(["gh", "auth", "login"], { live: true });
   }
   check("gh logged in", has("gh") && ok(["gh", "auth", "status"]), "gh auth login");
   const cargo = has("cargo") || existsSync(join(homedir(), ".cargo", "bin", win ? "cargo.exe" : "cargo"));

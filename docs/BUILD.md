@@ -247,6 +247,15 @@ bun run build:desktop --version 0.2.0
 The NSIS installer installs per user (no admin). It is unsigned, so SmartScreen warns:
 More info → Run anyway.
 
+**From a Mac (no Windows machine needed):** Tauri cross-builds the NSIS installer (experimental):
+
+```sh
+brew install nsis llvm
+rustup target add x86_64-pc-windows-msvc
+cargo install --locked cargo-xwin
+bun run build:desktop --version 0.2.0 --target x86_64-pc-windows-msvc
+```
+
 ## How updates flow
 
 1. `bun run release X` + upload puts the files at `<base>/X/`; set `GITNUT_LATEST_VERSION=X`

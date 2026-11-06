@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { networkInterfaces } from "node:os";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Client, bearer, startDaemon, tmp } from "./helpers";
@@ -190,6 +191,8 @@ describe("bind modes", () => {
     expect(resolveBind("localhost")).toBe("127.0.0.1");
     expect(resolveBind("all")).toBe("0.0.0.0");
     expect(resolveBind("10.1.2.3")).toBe("10.1.2.3");
-    expect(resolveBind("tailscale")).toMatch(/^100\./);
+    // depends on the machine: a Tailscale IP when Tailscale runs (dev boxes), a clear error otherwise (CI)
+    if (pickTailscaleIp(networkInterfaces())) expect(resolveBind("tailscale")).toMatch(/^100\./);
+    else expect(() => resolveBind("tailscale")).toThrow(/no Tailscale IPv4/);
   });
 });

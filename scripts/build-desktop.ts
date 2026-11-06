@@ -58,7 +58,8 @@ async function main() {
   if (!assets.length) throw new Error(`no desktop installers are defined for ${platform}`);
 
   // 0. macOS: certificate and notary profile first, so the questions come before the long build
-  const mac = process.platform === "darwin";
+  // signing applies to macOS targets (built on a Mac); a Windows target on a Mac is not codesigned
+  const mac = platform.startsWith("darwin") && process.platform === "darwin";
   const signing = mac ? pickIdentity(ROOT) : null;
   const notary = signing && !values["no-notarize"] ? notaryProfile(signing.team) : null;
 
@@ -83,6 +84,8 @@ async function main() {
   const bundles = [...new Set(assets.map((a) => a.bundle))].join(",");
   const tauri = ["bunx", "tauri", "build", "--bundles", bundles, "--config", JSON.stringify({ version })];
   if (values.target) tauri.push("--target", triple);
+  // Windows installer from macOS / Linux: Tauri's NSIS cross-build (cargo install cargo-xwin; brew install nsis llvm).
+  if (platform.startsWith("windows") && process.platform !== "win32") tauri.push("--runner", "cargo-xwin");
   runLive(tauri, DESKTOP, signing ? { APPLE_SIGNING_IDENTITY: signing.identity } : {});
 
   // 3. copy installers to release/<version>/

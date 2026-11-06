@@ -1,0 +1,13 @@
+{
+  "name": "GitNut",
+  "short_name": "GitNut",
+  "description": "The git client for monitoring AI coding agents across all your machines.",
+  "start_url": "/",
+  "display": "browser",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ],
+  "theme_color": "#07060d",
+  "background_color": "#07060d"
+}

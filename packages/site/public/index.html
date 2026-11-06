@@ -3,12 +3,47 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>GitNut: watch your AI coding agents work, live</title>
-  <meta name="description" content="The git client for monitoring AI coding agents. Live uncommitted changes, every agent branch in one graph, and IntelliJ-style diffs across all your machines and worktrees.">
+  <title>GitNut: git client for AI coding agents, live across all your machines</title>
+  <meta name="description" content="Monitor Claude Code, Codex and Cursor agents in one git client. Live uncommitted changes from every machine and worktree, an IntelliJ-style git graph and side-by-side diffs. Free and open source.">
+  <link rel="canonical" href="https://gitnut.dev/">
   <meta name="theme-color" content="#07060d">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="GitNut">
+  <meta property="og:title" content="GitNut: see what your AI agents are doing. Live.">
+  <meta property="og:description" content="The git client for monitoring AI coding agents. Live uncommitted changes, every agent branch in one IntelliJ-style graph, across all your machines.">
+  <meta property="og:url" content="https://gitnut.dev/">
+  <meta property="og:image" content="https://gitnut.dev/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="GitNut logo, the tagline “See what your AI agents are doing. Live.” and a screenshot of the GitNut commit graph">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="GitNut: see what your AI agents are doing. Live.">
+  <meta name="twitter:description" content="The git client for monitoring AI coding agents across all your machines, with an IntelliJ-style graph and diffs.">
+  <meta name="twitter:image" content="https://gitnut.dev/og.png">
+  <meta name="twitter:image:alt" content="GitNut logo, tagline and a screenshot of the commit graph">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="/style.css?v=3">
+  <link rel="manifest" href="/site.webmanifest">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "GitNut",
+    "description": "Git client for monitoring AI coding agents (Claude Code, Codex, Cursor) across machines and worktrees, with an IntelliJ-style git graph and diffs.",
+    "url": "https://gitnut.dev/",
+    "image": "https://gitnut.dev/og.png",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "macOS, Windows, Linux",
+    "downloadUrl": "https://gitnut.dev/#download",
+    "softwareHelp": "https://github.com/flyingart/gitnut#readme",
+    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Organization", "name": "Flying Art", "url": "https://flyingart.dev" }
+  }
+  </script>
+  <link rel="stylesheet" href="/style.css?v=4">
   <script type="module" src="/app.js"></script>
 </head>
 <body>
@@ -109,7 +144,7 @@
             <h3>Live uncommitted changes</h3>
             <p>Every worktree's edits, updated while agents type. "All uncommitted changes" merges several projects into one tree, so three agents on three repos fit on one screen.</p>
           </div>
-          <div class="crop" aria-hidden="true"><img src="/screenshots/local-changes.png" alt="" loading="lazy"></div>
+          <div class="crop"><img src="/screenshots/local-changes.png" alt="GitNut showing live uncommitted changes from several worktrees" loading="lazy"></div>
         </article>
         <article class="tile">
           <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/><path d="M11 9c1 0 1 2 2 2M11 15c1 0 1-2 2-2"/></svg></div>
@@ -122,7 +157,7 @@
           <p>Laptop, VPS, CI box: each runs one <code>gitnut</code> daemon. Group projects by server or see one flat list.</p>
         </article>
         <article class="tile big graph">
-          <div class="crop" aria-hidden="true"><img src="/screenshots/log.png" alt="" loading="lazy"></div>
+          <div class="crop"><img src="/screenshots/log.png" alt="GitNut commit graph with several agent branches" loading="lazy"></div>
           <div class="tile-text">
             <span class="tag">Graph</span>
             <h3>Every agent branch in one graph</h3>
@@ -210,7 +245,53 @@
           <p id="sums"></p>
         </div>
       </div>
-      <p class="unsigned">Builds are not signed yet. macOS: run <code>xattr -rd com.apple.quarantine /Applications/GitNut.app</code> after copying the app. Windows: SmartScreen → More info → Run anyway.</p>
+      <div class="install-help glass" id="install-help">
+        <div class="ih-head">
+          <div>
+            <h3>Installing the unsigned builds</h3>
+            <p>GitNut is not code-signed yet, so your OS warns on first launch. Allow it once as shown below. Every file has a SHA-256 checksum, and the source is on GitHub.</p>
+          </div>
+          <div class="ih-tabs" role="tablist" aria-label="Operating system">
+            <button type="button" role="tab" id="ih-tab-darwin" aria-controls="ih-darwin" aria-selected="true"><svg><use href="#i-apple"/></svg>macOS</button>
+            <button type="button" role="tab" id="ih-tab-windows" aria-controls="ih-windows" aria-selected="false" tabindex="-1"><svg><use href="#i-windows"/></svg>Windows</button>
+            <button type="button" role="tab" id="ih-tab-linux" aria-controls="ih-linux" aria-selected="false" tabindex="-1"><svg><use href="#i-linux"/></svg>Linux</button>
+          </div>
+        </div>
+        <div class="ih-panel" role="tabpanel" id="ih-darwin" aria-labelledby="ih-tab-darwin">
+          <ol class="ih-steps">
+            <li>Open the <code>.dmg</code> and drag <b>GitNut.app</b> to Applications, then open it.</li>
+            <li>macOS says <q>“GitNut” Not Opened. Apple could not verify…</q> Click <b>Done</b>, not <i>Move to Trash</i>.</li>
+            <li>Allow it once, either way:
+              <div class="ih-or">
+                <div><span class="ih-label">System Settings</span>Privacy &amp; Security → scroll down → <b>Open Anyway</b> → confirm with your password.</div>
+                <div><span class="ih-label">Terminal</span>Remove the download quarantine flag:
+                  <div class="cmd glass"><code>xattr -dr com.apple.quarantine /Applications/GitNut.app</code><button class="copy" type="button">Copy</button></div>
+                </div>
+              </div>
+            </li>
+          </ol>
+          <p class="ih-note">Right-click → Open no longer skips this check on recent macOS versions.</p>
+        </div>
+        <div class="ih-panel" role="tabpanel" id="ih-windows" aria-labelledby="ih-tab-windows" hidden>
+          <ol class="ih-steps">
+            <li>Run <code>GitNut-…-setup.exe</code>.</li>
+            <li>SmartScreen shows <q>Windows protected your PC</q>. Click <b>More info</b>.</li>
+            <li>Click <b>Run anyway</b>.</li>
+          </ol>
+          <p class="ih-note">The installer installs for your user only, so it needs no admin rights.</p>
+        </div>
+        <div class="ih-panel" role="tabpanel" id="ih-linux" aria-labelledby="ih-tab-linux" hidden>
+          <div class="ih-or">
+            <div><span class="ih-label">AppImage</span>Make it executable, then run it:
+              <div class="cmd glass"><code>chmod +x GitNut-*.AppImage &amp;&amp; ./GitNut-*.AppImage</code><button class="copy" type="button">Copy</button></div>
+            </div>
+            <div><span class="ih-label">.deb</span>Install it with apt from the download folder:
+              <div class="cmd glass"><code>sudo apt install ./GitNut-*.deb</code><button class="copy" type="button">Copy</button></div>
+            </div>
+          </div>
+        </div>
+        <p class="ih-soon"><span class="dot"></span>Signed and notarized builds are coming.</p>
+      </div>
     </section>
     <section id="support">
       <div class="eyebrow">Support</div>

@@ -248,8 +248,58 @@ h2 { font-size: clamp(1.7rem, 3.5vw, 2.4rem); letter-spacing: -0.035em; line-hei
 .bins { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; font-size: 0.85rem; }
 .bins a { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); padding: 0.35rem 0.55rem; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); }
 .bins a:hover { color: var(--foreground); border-color: var(--border-strong); }
-.unsigned { margin-top: 1rem; color: var(--faint); font-size: 0.82rem; }
-.unsigned code { color: var(--muted); }
+/* install help for the unsigned builds: one tab per OS, the detected one preselected (app.js) */
+.install-help { margin-top: 1rem; padding: 1.5rem; position: relative; overflow: hidden; }
+.install-help::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(60% 80% at 100% 0%, rgb(244 114 198 / 8%), transparent 60%), radial-gradient(50% 70% at 0% 100%, rgb(109 140 245 / 7%), transparent 60%);
+}
+.install-help > * { position: relative; }
+.ih-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 1rem 2rem; margin-bottom: 1.3rem; }
+.ih-head h3 { margin: 0 0 0.3rem; font-size: 1.1rem; letter-spacing: -0.01em; }
+.ih-head p { margin: 0; max-width: 46ch; color: var(--muted); font-size: 0.88rem; }
+.ih-tabs { display: flex; gap: 0.25rem; padding: 0.25rem; border: 1px solid var(--border); border-radius: 999px; background: rgb(255 255 255 / 2.5%); }
+.ih-tabs button {
+  display: flex; align-items: center; gap: 0.45rem; padding: 0.4rem 0.9rem; border: 1px solid transparent; border-radius: 999px;
+  background: none; color: var(--muted); font: 500 0.85rem/1.2 inherit; cursor: pointer; transition: color 0.15s, background 0.15s;
+}
+.ih-tabs button svg { width: 14px; height: 14px; }
+.ih-tabs button:hover { color: var(--foreground); }
+.ih-tabs button[aria-selected="true"] {
+  color: #fff; background: linear-gradient(135deg, rgb(244 114 198 / 22%), rgb(109 140 245 / 18%)); border-color: color-mix(in srgb, var(--pink) 45%, transparent);
+}
+.ih-tabs button:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+.ih-steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; gap: 0.9rem; }
+.ih-steps > li { counter-increment: step; position: relative; padding-left: 2.4rem; min-width: 0; color: #d6d6e0; font-size: 0.92rem; }
+.ih-steps > li::before {
+  content: counter(step); position: absolute; left: 0; top: -0.05rem; width: 1.6rem; height: 1.6rem; border-radius: 50%; display: grid; place-items: center;
+  font-size: 0.78rem; font-weight: 650; color: #fff; background: linear-gradient(#0d0b16, #0d0b16) padding-box, var(--grad) border-box; border: 1px solid transparent;
+}
+.ih-steps b { color: #fff; font-weight: 600; }
+.ih-steps q { color: var(--muted); font-style: italic; quotes: none; }
+.ih-steps code { font-size: 0.85em; color: #f5c2e7; }
+.install-help .cmd { margin: 0.55rem 0 0; max-width: 40rem; }
+.install-help .cmd code { color: #d6d6e0; font-size: 0.8rem; white-space: normal; overflow-wrap: break-word; }
+.ih-or { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+.ih-steps .ih-or { margin-top: 0.6rem; }
+.ih-or > div { min-width: 0; padding: 0.85rem 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: rgb(255 255 255 / 2%); color: var(--muted); }
+.ih-or .cmd { max-width: none; }
+.ih-label { display: block; margin-bottom: 0.25rem; color: #f9a8d4; font-size: 0.72rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; }
+.ih-note { margin: 1rem 0 0; padding-left: 2.4rem; color: var(--faint); font-size: 0.84rem; }
+.ih-soon { display: flex; align-items: center; gap: 0.5rem; margin: 1.3rem 0 0; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--faint); font-size: 0.82rem; }
+.ih-soon .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--grad); box-shadow: 0 0 10px rgb(244 114 198 / 60%); }
+@media (max-width: 760px) { .ih-or { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) {
+  .install-help { padding: 1.2rem; }
+  .ih-tabs { width: 100%; }
+  .ih-tabs button { flex: 1; justify-content: center; padding-inline: 0.5rem; }
+  .ih-steps > li, .ih-note { padding-left: 2.1rem; }
+  /* the option boxes and commands get the full width; the step number sits above them */
+  .ih-steps .ih-or { margin-left: -2.1rem; }
+  .ih-or > div { padding: 0.75rem 0.85rem; }
+  .install-help .cmd { padding-left: 0.75rem; }
+  .install-help .cmd code { font-size: 0.74rem; }
+}
 
 .release-line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin: -1.5rem 0 1.8rem; font-size: 0.85rem; }
 .release-line #dl-version { font-family: var(--mono); color: var(--muted); padding: 0.1rem 0.55rem; border: 1px solid var(--border); border-radius: 999px; }

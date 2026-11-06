@@ -1991,6 +1991,14 @@ select.gitnut-input {
   padding: 0;
   border-radius: 999px;
 }
+/* plain white pill: stands out next to the gradient wordmark without competing with it */
+.gitnut-update-compact.gitnut-btn-primary,
+.gitnut-update-compact.gitnut-btn-primary:hover:not(:disabled) {
+  background: #fff;
+  color: #14121c;
+  text-shadow: none;
+  box-shadow: 0 2px 10px -2px rgb(255 255 255 / 35%);
+}
 
 /* ---- servers list (settings) ------------------------------------------------------------- */
 

@@ -24,8 +24,27 @@ document.addEventListener("click", async (e) => {
   setTimeout(() => (btn.textContent = "Copy"), 1500);
 });
 
+// Install help tabs (WAI-ARIA tabs: click, or arrow keys inside the tab list).
+const tabs = [...document.querySelectorAll(".ih-tabs [role=tab]")];
+function selectTab(tab, focus = false) {
+  for (const t of tabs) {
+    const on = t === tab;
+    t.setAttribute("aria-selected", String(on));
+    t.tabIndex = on ? 0 : -1;
+    $(t.getAttribute("aria-controls")).hidden = !on;
+  }
+  if (focus) tab.focus();
+}
+for (const t of tabs) t.addEventListener("click", () => selectTab(t));
+document.querySelector(".ih-tabs").addEventListener("keydown", (e) => {
+  const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+  if (!step) return;
+  selectTab(tabs[(tabs.indexOf(document.activeElement) + step + tabs.length) % tabs.length], true);
+});
+
 detectCurrent().then((d) => {
   document.documentElement.dataset.platform = d.platform ?? "unknown";
+  if (d.os) selectTab($(`ih-tab-${d.os}`));
   if (d.os === "windows") {
     $("hero-cmd").classList.add("ps");
     $("hero-cmd-text").textContent = CMD.ps1;
@@ -73,7 +92,7 @@ fetch("/screenshots.json")
     const shot = $("shot");
     if (!files.length) return shot.insertAdjacentHTML("beforeend", mockShot());
     const hero = files.find((f) => /local-changes/i.test(f)) ?? files.find((f) => /hero|log/i.test(f)) ?? files[0];
-    shot.insertAdjacentHTML("beforeend", `<img src="/screenshots/${hero}" alt="GitNut client" data-zoom data-caption="${caption(hero)}">`);
+    shot.insertAdjacentHTML("beforeend", `<img src="/screenshots/${hero}" alt="GitNut showing ${caption(hero).toLowerCase()}" data-zoom data-caption="${caption(hero)}">`);
     const order = Object.keys(CAPTIONS);
     const rank = (f) => (order.indexOf(f.replace(/\.\w+$/, "")) + 1 || 99);
     $("gallery").innerHTML = files

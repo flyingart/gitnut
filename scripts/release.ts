@@ -54,6 +54,7 @@ async function main() {
   // Cargo.lock: only the app's own package entry
   const lock = join(ROOT, "packages/desktop/src-tauri/Cargo.lock");
   if (existsSync(lock)) writeFileSync(lock, readFileSync(lock, "utf8").replace(/(name = "gitnut-desktop"\nversion = )"[^"]*"/, `$1"${version}"`));
+  sh(["bun", "install"]); // bun.lock records the workspace versions
 
   // 2. web + daemon binaries into release/<version>/
   const dir = join(ROOT, "release", version);

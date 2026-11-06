@@ -18,7 +18,7 @@
     },
     "packages/client": {
       "name": "@gitnut/client",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@codemirror/language": "^6",
         "@codemirror/language-data": "^6",
@@ -36,11 +36,11 @@
     },
     "packages/commons": {
       "name": "@gitnut/commons",
-      "version": "0.1.0",
+      "version": "0.1.2",
     },
     "packages/daemon": {
       "name": "@gitnut/daemon",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "bin": {
         "gitnut": "src/cli.ts",
       },
@@ -50,21 +50,21 @@
     },
     "packages/desktop": {
       "name": "@gitnut/desktop",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "devDependencies": {
         "@tauri-apps/cli": "^2",
       },
     },
     "packages/site": {
       "name": "@gitnut/site",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@gitnut/commons": "workspace:*",
       },
     },
     "packages/web": {
       "name": "@gitnut/web",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@gitnut/client": "workspace:*",
         "react": "^19",

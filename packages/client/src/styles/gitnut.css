@@ -1,0 +1,2079 @@
+/* gitnut client styles. Everything is scoped under .gitnut-root and driven by --gitnut-* variables (see theme.ts). */
+
+.gitnut-root {
+  color: var(--gitnut-text);
+  background: var(--gitnut-background);
+  font-family: var(--gitnut-font-sans);
+  font-size: var(--gitnut-font-size-md);
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
+  --gitnut-line: var(--gitnut-border);
+}
+.gitnut-root.gitnut-scheme-light {
+  color-scheme: light;
+}
+.gitnut-root *,
+.gitnut-root *::before,
+.gitnut-root *::after {
+  box-sizing: border-box;
+}
+.gitnut-root :focus-visible {
+  outline: 2px solid var(--gitnut-focus);
+  outline-offset: -2px;
+}
+/* Text fields show their focus as a ring on their own border (see .gitnut-input, .gitnut-search). */
+.gitnut-root :is(input:not([type="checkbox"], [type="radio"], [type="color"]), textarea, select):focus-visible {
+  outline: none;
+}
+.gitnut-root .gitnut-btn:focus-visible,
+.gitnut-root .gitnut-link:focus-visible {
+  outline-offset: 1px;
+}
+.gitnut-root input[type="checkbox"],
+.gitnut-root input[type="radio"] {
+  accent-color: var(--gitnut-primary);
+}
+.gitnut-root ::selection {
+  background: color-mix(in srgb, var(--gitnut-primary) 40%, transparent);
+}
+
+/* One scrollbar style everywhere: Firefox / Chromium 121+ use scrollbar-*, Safari / WebKit (Tauri on macOS) the pseudo elements. */
+.gitnut-root,
+.gitnut-root * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gitnut-scrollbar) transparent;
+}
+.gitnut-root {
+  --gitnut-scrollbar: color-mix(in srgb, var(--gitnut-text) 20%, transparent);
+  --gitnut-scrollbar-hover: color-mix(in srgb, var(--gitnut-text) 36%, transparent);
+}
+.gitnut-root ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.gitnut-root ::-webkit-scrollbar-track,
+.gitnut-root ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+.gitnut-root ::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--gitnut-scrollbar) padding-box;
+}
+.gitnut-root ::-webkit-scrollbar-thumb:hover {
+  background: var(--gitnut-scrollbar-hover) padding-box;
+}
+.gitnut-root button,
+.gitnut-root input,
+.gitnut-root select,
+.gitnut-root textarea {
+  font: inherit;
+  color: inherit;
+}
+.gitnut-root code,
+.gitnut-root kbd,
+.gitnut-root .gitnut-mono {
+  font-family: var(--gitnut-font-mono);
+  font-size: 0.92em;
+}
+.gitnut-root code {
+  padding: 0 4px;
+  border-radius: var(--gitnut-radius-sm);
+  background: var(--gitnut-hover);
+}
+
+/* Component roots fill their container as flex columns. */
+.gitnut-c {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  position: relative;
+}
+.gitnut-c.gitnut-git-actions,
+.gitnut-c.gitnut-update {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--gitnut-space-xs);
+  height: auto;
+  position: static;
+}
+.gitnut-fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.gitnut-rel {
+  position: relative;
+}
+.gitnut-scroll {
+  overflow: auto;
+}
+.gitnut-muted {
+  color: var(--gitnut-muted-text);
+}
+.gitnut-strong {
+  font-weight: 600;
+}
+.gitnut-center {
+  flex: 1;
+  display: flex;
+  gap: var(--gitnut-space-md);
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+}
+.gitnut-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: color-mix(in srgb, var(--gitnut-background) 55%, transparent);
+}
+.gitnut-glass {
+  background: color-mix(in srgb, var(--gitnut-raised) var(--gitnut-glass-opacity), transparent);
+  backdrop-filter: blur(var(--gitnut-glass-blur)) saturate(var(--gitnut-glass-saturation));
+  -webkit-backdrop-filter: blur(var(--gitnut-glass-blur)) saturate(var(--gitnut-glass-saturation));
+}
+.gitnut-spin {
+  animation: gitnut-spin 0.8s linear infinite;
+  color: var(--gitnut-muted-text);
+}
+@keyframes gitnut-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gitnut-spin {
+    animation-duration: 2.4s;
+  }
+}
+
+/* ---- controls ---------------------------------------------------------------------- */
+
+.gitnut-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--gitnut-control-height-md);
+  padding: 0 10px;
+  border: 1px solid var(--gitnut-border);
+  border-radius: var(--gitnut-radius-md);
+  background: var(--gitnut-raised);
+  color: var(--gitnut-text);
+  font-size: var(--gitnut-font-size-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.gitnut-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gitnut-raised) 88%, var(--gitnut-text));
+}
+.gitnut-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.gitnut-btn-sm {
+  height: var(--gitnut-control-height-sm);
+  padding: 0 7px;
+  border-radius: var(--gitnut-radius-sm);
+}
+.gitnut-btn-lg {
+  height: var(--gitnut-control-height-lg);
+  padding: 0 14px;
+  font-size: var(--gitnut-font-size-md);
+}
+.gitnut-btn-icon {
+  padding: 0;
+  width: var(--gitnut-control-height-md);
+}
+.gitnut-btn-icon.gitnut-btn-sm {
+  width: var(--gitnut-control-height-sm);
+}
+.gitnut-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--gitnut-muted-text);
+}
+.gitnut-btn-ghost:hover:not(:disabled) {
+  background: var(--gitnut-hover);
+  color: var(--gitnut-text);
+}
+.gitnut-btn-ghost.gitnut-active {
+  color: var(--gitnut-text);
+  background: var(--gitnut-selection-inactive);
+}
+.gitnut-btn-primary {
+  background: var(--gitnut-gradient);
+  border-color: transparent;
+  color: var(--gitnut-primary-text);
+  font-weight: 600;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 18%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 22%),
+    0 4px 14px -4px color-mix(in srgb, var(--gitnut-primary) 60%, transparent);
+}
+.gitnut-btn-primary:hover:not(:disabled) {
+  background: var(--gitnut-gradient);
+  filter: brightness(1.1);
+}
+.gitnut-btn-danger {
+  background: color-mix(in srgb, var(--gitnut-danger) 20%, transparent);
+  border-color: color-mix(in srgb, var(--gitnut-danger) 45%, transparent);
+  color: var(--gitnut-danger);
+}
+.gitnut-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--gitnut-primary);
+  font-size: var(--gitnut-font-size-sm);
+  cursor: pointer;
+  filter: brightness(1.25);
+}
+.gitnut-scheme-light .gitnut-link {
+  filter: none;
+}
+.gitnut-link:hover {
+  text-decoration: underline;
+}
+.gitnut-segmented {
+  display: inline-flex;
+  padding: 1px;
+  border: 1px solid var(--gitnut-border);
+  border-radius: var(--gitnut-radius-sm);
+  background: var(--gitnut-surface);
+}
+.gitnut-segmented button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: calc(var(--gitnut-control-height-sm) - 4px);
+  padding: 0 6px;
+  border: 0;
+  border-radius: calc(var(--gitnut-radius-sm) - 1px);
+  background: transparent;
+  color: var(--gitnut-muted-text);
+  cursor: pointer;
+}
+.gitnut-segmented button.gitnut-active {
+  background: var(--gitnut-raised);
+  color: var(--gitnut-text);
+  box-shadow: 0 0 0 1px var(--gitnut-border);
+}
+.gitnut-input {
+  width: 100%;
+  min-height: var(--gitnut-control-height-md);
+  padding: 4px 8px;
+  border: 1px solid var(--gitnut-border);
+  border-radius: var(--gitnut-radius-md);
+  background: var(--gitnut-surface);
+  outline: none;
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-input:hover:not(:focus, :disabled),
+.gitnut-search:hover:not(:focus-within) {
+  border-color: color-mix(in srgb, var(--gitnut-text) 16%, transparent);
+}
+select.gitnut-input {
+  appearance: none;
+  padding-right: 26px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  cursor: pointer;
+}
+.gitnut-input {
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.gitnut-input:focus {
+  border-color: color-mix(in srgb, var(--gitnut-primary) 70%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gitnut-primary) 22%, transparent);
+}
+.gitnut-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: var(--gitnut-control-height-md);
+  padding: 0 8px;
+  border: 1px solid var(--gitnut-border);
+  border-radius: var(--gitnut-radius-md);
+  background: var(--gitnut-surface);
+}
+.gitnut-search:focus-within {
+  border-color: color-mix(in srgb, var(--gitnut-primary) 70%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gitnut-primary) 22%, transparent);
+}
+.gitnut-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-search-clear {
+  display: inline-flex;
+  padding: 2px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--gitnut-hover);
+  color: var(--gitnut-muted-text);
+  cursor: pointer;
+}
+.gitnut-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--gitnut-font-size-sm);
+  cursor: pointer;
+}
+.gitnut-root input[type="checkbox"],
+.gitnut-root input[type="radio"] {
+  accent-color: var(--gitnut-primary);
+  margin: 0;
+}
+.gitnut-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--gitnut-selection-inactive);
+  color: var(--gitnut-muted-text);
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.gitnut-badge-dirty {
+  background: color-mix(in srgb, var(--gitnut-status-modified) 18%, transparent);
+  color: var(--gitnut-status-modified);
+}
+.gitnut-ab {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  color: var(--gitnut-muted-text);
+  font-size: var(--gitnut-font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+.gitnut-status-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  display: inline-block;
+  background: var(--gitnut-muted-text);
+}
+.gitnut-state-open {
+  background: var(--gitnut-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gitnut-success) 18%, transparent);
+}
+.gitnut-state-connecting {
+  background: var(--gitnut-warning);
+}
+.gitnut-state-unauthorized {
+  background: var(--gitnut-danger);
+}
+.gitnut-state-offline {
+  background: var(--gitnut-muted-text);
+  opacity: 0.6;
+}
+.gitnut-count {
+  font-size: var(--gitnut-font-size-xs);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.gitnut-notice,
+.gitnut-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: var(--gitnut-font-size-sm);
+  border-radius: var(--gitnut-radius-md);
+  background: color-mix(in srgb, var(--gitnut-warning) 10%, transparent);
+  color: color-mix(in srgb, var(--gitnut-warning) 80%, var(--gitnut-text));
+}
+.gitnut-notice {
+  border-radius: 0;
+  border-top: 1px solid var(--gitnut-border);
+}
+.gitnut-error-text {
+  color: var(--gitnut-danger);
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-ok-text {
+  color: var(--gitnut-success);
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-skeleton {
+  display: inline-block;
+  width: 40%;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--gitnut-hover);
+}
+.gitnut-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  color: var(--gitnut-muted-text);
+  min-height: 80px;
+}
+.gitnut-empty > svg {
+  opacity: 0.7;
+}
+.gitnut-empty-title {
+  color: var(--gitnut-text);
+  font-weight: 500;
+}
+.gitnut-empty-text {
+  max-width: 46ch;
+  font-size: var(--gitnut-font-size-sm);
+  line-height: 1.5;
+}
+
+/* ---- toolbars, menus, dialogs ---------------------------------------------------------- */
+
+.gitnut-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--gitnut-space-xs);
+  flex: none;
+  min-height: 32px;
+  padding: 3px var(--gitnut-space-md);
+  border-bottom: 1px solid var(--gitnut-border);
+}
+.gitnut-toolbar-spacer {
+  flex: 1 1 auto;
+}
+.gitnut-popover-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.gitnut-popover.gitnut-glass,
+.gitnut-toast.gitnut-glass {
+  background: color-mix(in srgb, var(--gitnut-raised) 97%, transparent);
+}
+.gitnut-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: 30;
+  min-width: 200px;
+  max-width: 340px;
+  padding: 4px;
+  border: 1px solid var(--gitnut-border);
+  border-radius: var(--gitnut-radius-lg);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 45%);
+}
+.gitnut-popover-left {
+  left: 0;
+}
+.gitnut-popover-right {
+  right: 0;
+}
+.gitnut-menu {
+  display: flex;
+  flex-direction: column;
+}
+.gitnut-menu-label {
+  padding: 6px 8px 2px;
+  color: var(--gitnut-muted-text);
+  font-size: var(--gitnut-font-size-xs);
+}
+.gitnut-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--gitnut-radius-sm);
+  background: transparent;
+  text-align: left;
+  font-size: var(--gitnut-font-size-sm);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.gitnut-menu-item:hover,
+.gitnut-menu-item.gitnut-active {
+  background: var(--gitnut-hover);
+}
+.gitnut-menu-right {
+  margin-left: auto;
+}
+.gitnut-menu-form {
+  gap: 8px;
+  padding: 6px;
+}
+.gitnut-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+.gitnut-chip-text {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gitnut-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 55%);
+  backdrop-filter: blur(2px);
+}
+.gitnut-portal {
+  background: transparent !important;
+}
+.gitnut-dialog.gitnut-glass {
+  background: color-mix(in srgb, var(--gitnut-raised) 96%, transparent);
+}
+.gitnut-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(460px, 100%);
+  max-height: min(86vh, 900px);
+  border: 1px solid var(--gitnut-border);
+  border-radius: var(--gitnut-radius-lg);
+  box-shadow: 0 30px 80px rgb(0 0 0 / 55%);
+  color: var(--gitnut-text);
+}
+.gitnut-dialog-wide {
+  width: min(720px, 100%);
+}
+.gitnut-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 10px 16px;
+  border-bottom: 1px solid var(--gitnut-border);
+}
+.gitnut-dialog-title {
+  flex: 1;
+  font-weight: 600;
+}
+.gitnut-dialog-body {
+  overflow: auto;
+  padding: 16px;
+}
+.gitnut-toasts {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(420px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.gitnut-toast {
+  pointer-events: auto;
+  border: 1px solid var(--gitnut-border);
+  border-radius: var(--gitnut-radius-lg);
+  box-shadow: 0 16px 50px rgb(0 0 0 / 50%);
+  animation: gitnut-toast-in 0.16s ease-out;
+}
+@keyframes gitnut-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.gitnut-toast-error {
+  border-color: color-mix(in srgb, var(--gitnut-danger) 45%, transparent);
+}
+.gitnut-toast-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 12px;
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-toast-head > strong {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.gitnut-toast-icon {
+  flex: none;
+  color: var(--gitnut-muted-text);
+}
+.gitnut-toast-success .gitnut-toast-icon {
+  color: var(--gitnut-success);
+}
+.gitnut-toast-error .gitnut-toast-icon {
+  color: var(--gitnut-danger);
+}
+.gitnut-toast-details {
+  padding: 0 12px 8px 34px;
+}
+.gitnut-toast-details > summary {
+  width: max-content;
+  color: var(--gitnut-muted-text);
+  font-size: var(--gitnut-font-size-xs);
+  cursor: pointer;
+  user-select: none;
+}
+.gitnut-toast-body {
+  margin: 6px 0 0;
+  max-height: 200px;
+  overflow: auto;
+  color: var(--gitnut-muted-text);
+  font: var(--gitnut-font-size-xs) / 1.5 var(--gitnut-font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---- context menu and action dialogs ----------------------------------------------------- */
+
+.gitnut-context-menu {
+  position: fixed;
+  z-index: 1100;
+  min-width: 230px;
+  max-width: 380px;
+  padding: 4px;
+  border: 1px solid var(--gitnut-border);
+  border-radius: var(--gitnut-radius-lg);
+  background: color-mix(in srgb, var(--gitnut-raised) 98%, transparent);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 55%), 0 0 0 1px rgb(0 0 0 / 25%);
+  color: var(--gitnut-text);
+  font-family: var(--gitnut-font-sans);
+  outline: none;
+}
+.gitnut-context-menu .gitnut-menu-item {
+  min-height: 24px;
+  gap: 9px;
+  padding: 0 10px 0 8px;
+}
+.gitnut-menu-item:focus-visible {
+  outline: none;
+  background: var(--gitnut-hover);
+}
+.gitnut-menu-item:disabled {
+  opacity: 0.42;
+  cursor: default;
+  background: transparent;
+}
+.gitnut-menu-icon {
+  display: inline-flex;
+  width: 14px;
+  flex: none;
+  color: var(--gitnut-muted-text);
+}
+.gitnut-menu-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gitnut-menu-hint {
+  padding-left: 16px;
+  color: var(--gitnut-muted-text);
+  font-size: var(--gitnut-font-size-xs);
+}
+.gitnut-menu-danger,
+.gitnut-menu-danger .gitnut-menu-icon {
+  color: var(--gitnut-danger);
+}
+.gitnut-menu-sep {
+  height: 1px;
+  margin: 3px 8px;
+  background: var(--gitnut-border);
+}
+.gitnut-action-target {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--gitnut-warning) 30%, var(--gitnut-border));
+  border-radius: var(--gitnut-radius-md);
+  background: color-mix(in srgb, var(--gitnut-warning) 8%, transparent);
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-action-target > svg {
+  color: var(--gitnut-warning);
+}
+.gitnut-action-message {
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-action-command {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--gitnut-border);
+  border-radius: var(--gitnut-radius-md);
+  background: var(--gitnut-surface);
+  font: var(--gitnut-font-size-xs) / 1.5 var(--gitnut-font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.gitnut-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.gitnut-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--gitnut-radius-md);
+  font-size: var(--gitnut-font-size-sm);
+  cursor: pointer;
+}
+.gitnut-choice.gitnut-active {
+  border-color: var(--gitnut-border);
+  background: var(--gitnut-hover);
+}
+.gitnut-choice > span {
+  display: flex;
+  flex-direction: column;
+}
+.gitnut-choice input {
+  margin-top: 3px;
+}
+.gitnut-wt-picker {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: var(--gitnut-control-height-sm);
+  padding: 0 4px 0 8px;
+  border: 1px solid var(--gitnut-border);
+  border-radius: var(--gitnut-radius-md);
+  font-size: var(--gitnut-font-size-sm);
+  white-space: nowrap;
+}
+.gitnut-wt-picker select {
+  width: auto;
+  max-width: 110px;
+  text-overflow: ellipsis;
+  border: 0;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+}
+.gitnut-wt-picker select option {
+  background: var(--gitnut-raised);
+}
+.gitnut-proj-fetchall {
+  display: none;
+}
+.gitnut-proj-server:hover .gitnut-proj-fetchall {
+  display: inline-flex;
+}
+
+/* ---- forms ------------------------------------------------------------------------------ */
+
+.gitnut-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gitnut-field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-field > span {
+  color: var(--gitnut-muted-text);
+}
+.gitnut-field-row {
+  display: flex;
+  gap: 10px;
+}
+.gitnut-align-center {
+  align-items: center;
+}
+.gitnut-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+.gitnut-list-input {
+  font-family: var(--gitnut-font-mono);
+  resize: vertical;
+}
+/* Section (form.tsx): every settings screen / dialog part. Same rhythm everywhere, a divider below each,
+   so sections of separate panels (Appearance, Servers, daemon settings) stack cleanly. */
+.gitnut-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--gitnut-border);
+}
+.gitnut-dialog-body > :first-child .gitnut-section:first-child,
+.gitnut-dialog-body > .gitnut-section:first-child {
+  padding-top: 0;
+}
+/* a form made of sections: the sections bring their own spacing */
+.gitnut-form:has(> .gitnut-section) {
+  gap: 0;
+}
+.gitnut-form > .gitnut-section ~ :not(.gitnut-section) {
+  margin-top: 12px;
+}
+.gitnut-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gitnut-section-head h3 {
+  flex: 1;
+  margin: 0;
+  font-size: var(--gitnut-font-size-md);
+  font-weight: 600;
+}
+.gitnut-settings-server {
+  margin-bottom: 12px;
+}
+.gitnut-token-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--gitnut-primary) 40%, transparent);
+  border-radius: var(--gitnut-radius-md);
+  background: color-mix(in srgb, var(--gitnut-primary) 10%, transparent);
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-token-box code {
+  flex: 1 1 100%;
+  word-break: break-all;
+  user-select: all;
+}
+
+/* ---- split panes ------------------------------------------------------------------------- */
+
+.gitnut-split {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+.gitnut-split-column {
+  flex-direction: column;
+}
+.gitnut-split-pane {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.gitnut-split-handle {
+  flex: none;
+  position: relative;
+  background: var(--gitnut-border);
+  z-index: 2;
+}
+.gitnut-split-row > .gitnut-split-handle {
+  width: 1px;
+  cursor: col-resize;
+}
+.gitnut-split-column > .gitnut-split-handle {
+  height: 1px;
+  cursor: row-resize;
+}
+/* wider grab area, only across the handle: sideways it would stick out of the window (page scrollbar) */
+.gitnut-split-handle::after {
+  content: "";
+  position: absolute;
+}
+.gitnut-split-row > .gitnut-split-handle::after {
+  inset: 0 -3px;
+}
+.gitnut-split-column > .gitnut-split-handle::after {
+  inset: -3px 0;
+}
+.gitnut-split-handle:hover,
+.gitnut-split-handle:active {
+  background: var(--gitnut-primary);
+}
+
+/* ---- rows (trees, lists, table) ------------------------------------------------------------ */
+
+.gitnut-tree,
+.gitnut-log-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  outline: none;
+}
+.gitnut-tree-row,
+.gitnut-log-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  font-size: var(--gitnut-font-size-md);
+  cursor: default;
+  user-select: none;
+}
+.gitnut-tree-row:hover,
+.gitnut-log-row:hover,
+.gitnut-proj-row:hover,
+.gitnut-refs-row:hover {
+  background: var(--gitnut-hover);
+}
+.gitnut-selected,
+.gitnut-selected:hover {
+  background: var(--gitnut-selection-inactive);
+}
+.gitnut-tree:focus .gitnut-selected,
+.gitnut-log-scroll:focus .gitnut-selected,
+.gitnut-proj-tree .gitnut-selected {
+  background: var(--gitnut-selection);
+}
+.gitnut-tree-chevron {
+  display: inline-flex;
+  width: 14px;
+  flex: none;
+  justify-content: center;
+  color: var(--gitnut-muted-text);
+}
+.gitnut-tree-icon {
+  flex: none;
+  opacity: 0.9;
+}
+.gitnut-folder-icon,
+.gitnut-group-icon {
+  color: var(--gitnut-muted-text);
+}
+.gitnut-tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gitnut-group-repo .gitnut-tree-name,
+.gitnut-group-server .gitnut-tree-name {
+  font-weight: 600;
+}
+.gitnut-tree-hint {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--gitnut-muted-text);
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-tree-count {
+  color: var(--gitnut-muted-text);
+  font-size: var(--gitnut-font-size-xs);
+  margin-left: 2px;
+}
+.gitnut-status-letter {
+  font: 600 10px var(--gitnut-font-mono);
+  margin-left: auto;
+  padding-right: 8px;
+}
+.gitnut-check {
+  flex: none;
+  width: 13px;
+  height: 13px;
+}
+.gitnut-browser-tree {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.gitnut-browser-tree > .gitnut-changes-tree {
+  flex: 1 1 auto;
+  height: auto;
+}
+
+/* ---- commit log ------------------------------------------------------------------------------ */
+
+.gitnut-log-top {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--gitnut-border);
+  padding-right: 6px;
+}
+.gitnut-log-top .gitnut-filterbar {
+  flex: 1;
+  border-bottom: 0;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.gitnut-filterbar .gitnut-search {
+  width: 220px;
+  margin-right: 4px;
+  height: var(--gitnut-control-height-sm);
+}
+.gitnut-log-body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.gitnut-log-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.gitnut-log-row {
+  gap: 0;
+}
+.gitnut-log-row.gitnut-jump {
+  cursor: pointer;
+}
+.gitnut-log-subject {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+.gitnut-log-subject-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gitnut-log-cell {
+  flex: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 8px;
+  color: var(--gitnut-muted-text);
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-log-hash {
+  font-size: var(--gitnut-font-size-xs);
+}
+.gitnut-selected .gitnut-log-cell {
+  color: color-mix(in srgb, var(--gitnut-text) 80%, transparent);
+}
+.gitnut-refs {
+  display: inline-flex;
+  flex: none;
+  gap: 3px;
+  max-width: 55%;
+  overflow: hidden;
+}
+.gitnut-ref {
+  --ref: var(--gitnut-refs-local);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 16px;
+  max-width: 220px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ref) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ref) 28%, transparent);
+  color: color-mix(in srgb, var(--ref) 85%, var(--gitnut-text));
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.gitnut-ref-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gitnut-ref-remote {
+  --ref: var(--gitnut-refs-remote);
+}
+.gitnut-ref-tag {
+  --ref: var(--gitnut-refs-tag);
+}
+.gitnut-ref-head,
+.gitnut-ref-current {
+  --ref: var(--gitnut-refs-head);
+}
+.gitnut-ref-current {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ref) 55%, transparent);
+}
+.gitnut-ref-more {
+  --ref: var(--gitnut-muted-text);
+}
+.gitnut-ref-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gitnut-refs-local);
+}
+.gitnut-ref-dot.gitnut-ref-remote {
+  background: var(--gitnut-refs-remote);
+}
+.gitnut-ref-dot.gitnut-ref-tag {
+  background: var(--gitnut-refs-tag);
+}
+
+/* branches panel */
+.gitnut-branches .gitnut-toolbar .gitnut-search {
+  flex: 1;
+  height: var(--gitnut-control-height-sm);
+}
+.gitnut-refs-tree {
+  flex: 1;
+  min-height: 0;
+  padding: 4px 0;
+}
+.gitnut-refs-section,
+.gitnut-refs-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: var(--gitnut-row-height);
+  padding-right: 8px;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+.gitnut-refs-section {
+  color: var(--gitnut-muted-text);
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-refs-section:hover {
+  color: var(--gitnut-text);
+}
+.gitnut-ref-icon {
+  display: inline-flex;
+  color: var(--gitnut-refs-local);
+}
+.gitnut-ref-icon.gitnut-ref-remote {
+  color: var(--gitnut-refs-remote);
+}
+.gitnut-ref-icon.gitnut-ref-tag {
+  color: var(--gitnut-refs-tag);
+}
+.gitnut-ref-icon.gitnut-ref-head {
+  color: var(--gitnut-refs-head);
+}
+.gitnut-refs-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gitnut-refs-wt {
+  width: 5px;
+  height: 5px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--gitnut-refs-head);
+}
+.gitnut-refs-filter {
+  margin-left: auto;
+  display: inline-flex;
+  padding: 2px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--gitnut-muted-text);
+  opacity: 0;
+  cursor: pointer;
+}
+.gitnut-refs-row:hover .gitnut-refs-filter,
+.gitnut-refs-row.gitnut-selected .gitnut-refs-filter {
+  opacity: 1;
+}
+.gitnut-refs-row.gitnut-selected {
+  background: var(--gitnut-selection);
+}
+
+/* commit details */
+.gitnut-details {
+  padding: 10px 12px 14px;
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-details-subject {
+  font-size: var(--gitnut-font-size-md);
+  font-weight: 600;
+  line-height: 1.45;
+}
+.gitnut-details-body {
+  margin: 6px 0 0;
+  color: color-mix(in srgb, var(--gitnut-text) 85%, transparent);
+  line-height: 1.5;
+}
+.gitnut-details-body p {
+  margin: 0 0 6px;
+  max-width: 80ch;
+}
+.gitnut-details-body .gitnut-pre {
+  white-space: pre-wrap;
+}
+.gitnut-details-refs {
+  margin: 8px 0 2px;
+}
+.gitnut-details-refs .gitnut-refs {
+  flex-wrap: wrap;
+  max-width: none;
+}
+.gitnut-details-meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 10px 0 0;
+}
+.gitnut-details-meta dt {
+  color: var(--gitnut-muted-text);
+}
+.gitnut-details-meta dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  margin: 0;
+  min-width: 0;
+}
+.gitnut-details-meta dd > div {
+  flex-basis: 100%;
+}
+.gitnut-details-summary {
+  margin-top: 2px;
+}
+.gitnut-details-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+.gitnut-details-list li {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+  white-space: nowrap;
+}
+.gitnut-details-list-subject {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- diff ------------------------------------------------------------------------------------ */
+
+.gitnut-diff:focus {
+  outline: none;
+}
+.gitnut-diff {
+  --ins: var(--gitnut-diff-inserted);
+  --del: var(--gitnut-diff-deleted);
+  --mod: var(--gitnut-diff-modified);
+  background: var(--gitnut-background);
+}
+.gitnut-diff-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--gitnut-border);
+  font-size: var(--gitnut-font-size-sm);
+  white-space: nowrap;
+}
+.gitnut-status-badge {
+  font-size: var(--gitnut-font-size-xs);
+  font-weight: 600;
+}
+.gitnut-diff-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
+}
+.gitnut-diff-path > span {
+  direction: ltr;
+  unicode-bidi: embed;
+}
+.gitnut-diff-refs {
+  color: var(--gitnut-muted-text);
+  font-size: var(--gitnut-font-size-xs);
+}
+.gitnut-diff-toolbar {
+  min-height: 30px;
+  border-bottom: 1px solid var(--gitnut-border);
+}
+.gitnut-diff-body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.gitnut-diff-host {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.gitnut-diff-host > .cm-editor {
+  flex: 1;
+  height: 100%;
+}
+.gitnut-diff-hint {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  padding: 6px 12px;
+  border: 1px solid var(--gitnut-border);
+  border-radius: var(--gitnut-radius-md);
+  font-size: var(--gitnut-font-size-sm);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 40%);
+}
+.gitnut-sbs {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.gitnut-sbs-pane {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+.gitnut-sbs-pane > .cm-editor {
+  flex: 1;
+  min-width: 0;
+}
+.gitnut-sbs-connectors {
+  flex: none;
+  width: 36px;
+  height: 100%;
+  border-left: 1px solid var(--gitnut-border);
+  border-right: 1px solid var(--gitnut-border);
+  background: var(--gitnut-surface);
+}
+.gitnut-connector {
+  stroke-width: 1;
+}
+.gitnut-connector-modified {
+  fill: color-mix(in srgb, var(--mod) 26%, transparent);
+  stroke: color-mix(in srgb, var(--mod) 60%, transparent);
+}
+.gitnut-connector-inserted {
+  fill: color-mix(in srgb, var(--ins) 26%, transparent);
+  stroke: color-mix(in srgb, var(--ins) 60%, transparent);
+}
+.gitnut-connector-deleted {
+  fill: color-mix(in srgb, var(--del) 24%, transparent);
+  stroke: color-mix(in srgb, var(--del) 55%, transparent);
+}
+.gitnut-root .gitnut-diff-line.gitnut-diff-modified {
+  background: color-mix(in srgb, var(--mod) 15%, transparent);
+}
+.gitnut-root .gitnut-diff-line.gitnut-diff-inserted {
+  background: color-mix(in srgb, var(--ins) 15%, transparent);
+}
+.gitnut-root .gitnut-diff-line.gitnut-diff-deleted {
+  background: color-mix(in srgb, var(--del) 16%, transparent);
+}
+.gitnut-root .gitnut-diff-word {
+  border-radius: 2px;
+}
+.gitnut-root .gitnut-diff-word-deleted {
+  background: color-mix(in srgb, var(--mod) 30%, transparent);
+}
+.gitnut-root .gitnut-diff-word-inserted {
+  background: color-mix(in srgb, var(--mod) 34%, transparent);
+}
+.gitnut-root .gitnut-diff-gap-before {
+  box-shadow: inset 0 1px 0 var(--gap);
+}
+.gitnut-root .gitnut-diff-gap-after {
+  box-shadow: inset 0 -1px 0 var(--gap);
+}
+.gitnut-diff-gap-before.gitnut-diff-inserted,
+.gitnut-diff-gap-after.gitnut-diff-inserted {
+  --gap: color-mix(in srgb, var(--ins) 75%, transparent);
+}
+.gitnut-diff-gap-before.gitnut-diff-deleted,
+.gitnut-diff-gap-after.gitnut-diff-deleted {
+  --gap: color-mix(in srgb, var(--del) 75%, transparent);
+}
+.gitnut-diff-fold {
+  margin: 2px 0;
+  padding: 1px 12px;
+  background: color-mix(in srgb, var(--gitnut-text) 4%, transparent);
+  border-top: 1px dashed var(--gitnut-border);
+  border-bottom: 1px dashed var(--gitnut-border);
+  color: var(--gitnut-muted-text);
+  font: var(--gitnut-font-size-xs) / 18px var(--gitnut-font-sans);
+  cursor: pointer;
+}
+.gitnut-diff-fold:hover {
+  color: var(--gitnut-text);
+}
+/* unified viewer (@codemirror/merge) */
+.gitnut-root .gitnut-unified .cm-changedLine {
+  background: color-mix(in srgb, var(--ins) 14%, transparent) !important;
+}
+.gitnut-root .gitnut-unified .cm-deletedChunk {
+  background: color-mix(in srgb, var(--del) 16%, transparent) !important;
+  padding-left: 0;
+}
+.gitnut-root .gitnut-unified .cm-changedText,
+.gitnut-root .gitnut-unified ins.cm-insertedLine {
+  background: color-mix(in srgb, var(--ins) 34%, transparent) !important;
+  text-decoration: none;
+}
+.gitnut-root .gitnut-unified .cm-deletedChunk .cm-deletedText,
+.gitnut-root .gitnut-unified del {
+  background: color-mix(in srgb, var(--del) 38%, transparent) !important;
+  text-decoration: none;
+}
+.gitnut-root .gitnut-unified .cm-changedLineGutter {
+  background: var(--ins) !important;
+}
+.gitnut-root .gitnut-unified .cm-deletedLineGutter {
+  background: var(--del) !important;
+}
+.gitnut-root .gitnut-unified .cm-collapsedLines {
+  background: color-mix(in srgb, var(--gitnut-text) 4%, transparent);
+  color: var(--gitnut-muted-text);
+  font: var(--gitnut-font-size-xs) var(--gitnut-font-sans);
+  padding: 2px 12px;
+}
+
+/* ---- local changes ----------------------------------------------------------------------- */
+
+.gitnut-local-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  min-height: 36px;
+  padding: 0 10px 0 12px;
+  border-bottom: 1px solid var(--gitnut-border);
+  font-size: var(--gitnut-font-size-sm);
+  white-space: nowrap;
+}
+.gitnut-local-branch {
+  font-weight: 600;
+  font-size: var(--gitnut-font-size-md);
+}
+.gitnut-local-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gitnut-commit-panel {
+  flex: none;
+  height: auto;
+  gap: 8px;
+  padding: 8px;
+  border-top: 1px solid var(--gitnut-border);
+}
+.gitnut-commit-message {
+  min-height: 64px;
+  resize: vertical;
+  line-height: 1.45;
+}
+.gitnut-commit-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---- projects -------------------------------------------------------------------------- */
+
+.gitnut-proj-search {
+  padding: 4px 10px 6px;
+}
+.gitnut-proj-search .gitnut-search {
+  height: var(--gitnut-control-height-sm);
+}
+.gitnut-proj-tree {
+  flex: 1;
+  min-height: 0;
+  padding: 0 6px 8px;
+}
+.gitnut-proj-group + .gitnut-proj-group {
+  margin-top: 6px;
+}
+.gitnut-proj-server,
+.gitnut-proj-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: calc(var(--gitnut-row-height) + 4px);
+  padding-right: 8px;
+  border-radius: var(--gitnut-radius-sm);
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+.gitnut-proj-server {
+  padding-left: 4px;
+  color: var(--gitnut-muted-text);
+  font-size: var(--gitnut-font-size-sm);
+  font-weight: 500;
+}
+.gitnut-proj-server:hover {
+  color: var(--gitnut-text);
+}
+.gitnut-proj-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gitnut-proj-icon {
+  flex: none;
+  color: var(--gitnut-muted-text);
+}
+.gitnut-proj-wt {
+  font-size: var(--gitnut-font-size-sm);
+  height: var(--gitnut-row-height);
+}
+.gitnut-proj-loading,
+.gitnut-proj-empty {
+  padding: 6px 12px 6px 30px;
+  color: var(--gitnut-muted-text);
+  font-size: var(--gitnut-font-size-sm);
+  line-height: 1.5;
+}
+
+/* ---- login ------------------------------------------------------------------------------- */
+
+.gitnut-login-screen {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 35%, color-mix(in srgb, var(--gitnut-primary) 14%, transparent), transparent 70%),
+    var(--gitnut-background);
+}
+.gitnut-login {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(380px, 100%);
+  padding: 28px 26px 24px;
+  border: 1px solid var(--gitnut-border);
+  border-radius: calc(var(--gitnut-radius-lg) * 1.5);
+  box-shadow: 0 30px 80px rgb(0 0 0 / 45%);
+  text-align: center;
+}
+.gitnut-login-inline .gitnut-login,
+.gitnut-dialog .gitnut-login {
+  border: 0;
+  box-shadow: none;
+  background: none;
+  backdrop-filter: none;
+  padding: 4px;
+  width: 100%;
+}
+.gitnut-login-title {
+  margin: 6px 0 0;
+  font-size: var(--gitnut-font-size-lg);
+  font-weight: 600;
+}
+.gitnut-login-text {
+  margin: 0;
+  font-size: var(--gitnut-font-size-sm);
+  line-height: 1.5;
+}
+.gitnut-login-input {
+  width: 100%;
+  height: var(--gitnut-control-height-lg);
+  margin-top: 8px;
+}
+.gitnut-login-submit {
+  width: 100%;
+}
+
+/* ---- app -------------------------------------------------------------------------------- */
+
+.gitnut-app {
+  height: 100%;
+}
+.gitnut-root.gitnut-app {
+  background: var(--gitnut-backdrop);
+}
+.gitnut-app-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.gitnut-sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 272px;
+  flex: none;
+  min-height: 0;
+  border-right: 1px solid var(--gitnut-border);
+}
+.gitnut-sidebar-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 8px 0 12px;
+}
+.gitnut-wordmark {
+  color: var(--gitnut-text);
+  font-weight: 650;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+/* "git" plain, "nut" in the accent gradient */
+.gitnut-wordmark > span {
+  background: var(--gitnut-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.gitnut-sidebar-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 6px 4px;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--gitnut-radius-sm);
+  background: transparent;
+  color: var(--gitnut-text);
+  font-size: var(--gitnut-font-size-md);
+  text-align: left;
+  cursor: pointer;
+}
+.gitnut-sidebar-entry:hover {
+  background: var(--gitnut-hover);
+}
+.gitnut-sidebar-entry.gitnut-selected {
+  background: var(--gitnut-selection);
+}
+.gitnut-sidebar-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--gitnut-border);
+}
+.gitnut-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.gitnut-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  height: 38px;
+  padding: 0 6px;
+  border-bottom: 1px solid var(--gitnut-border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.gitnut-view-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 6px;
+  font-size: var(--gitnut-font-size-sm);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.gitnut-view-title > span:not(.gitnut-tab-kind) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gitnut-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  max-width: 260px;
+  padding: 0 4px 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--gitnut-radius-md);
+  color: var(--gitnut-muted-text);
+  font-size: var(--gitnut-font-size-sm);
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+.gitnut-tab > span:first-of-type {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gitnut-tab:hover {
+  color: var(--gitnut-text);
+  background: var(--gitnut-hover);
+}
+.gitnut-tab.gitnut-active {
+  color: var(--gitnut-text);
+  background: var(--gitnut-raised);
+  border-color: var(--gitnut-border);
+}
+.gitnut-tab-kind {
+  color: var(--gitnut-muted-text);
+  font-size: var(--gitnut-font-size-xs);
+}
+.gitnut-tab-close {
+  display: inline-flex;
+  padding: 3px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--gitnut-muted-text);
+  opacity: 0;
+  cursor: pointer;
+}
+.gitnut-tab:hover .gitnut-tab-close,
+.gitnut-tab.gitnut-active .gitnut-tab-close {
+  opacity: 1;
+}
+.gitnut-tab-close:hover {
+  background: var(--gitnut-hover);
+  color: var(--gitnut-text);
+}
+.gitnut-main-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.gitnut-view-toolbar {
+  min-height: 30px;
+  padding: 2px 6px;
+}
+.gitnut-full-diff {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  background: var(--gitnut-background);
+}
+.gitnut-shortcuts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-shortcuts > div {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+.gitnut-shortcuts dt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.gitnut-shortcuts dd {
+  margin: 0;
+  color: var(--gitnut-muted-text);
+}
+.gitnut-root kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--gitnut-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--gitnut-raised);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.gitnut-comfortable .gitnut-toolbar {
+  min-height: 38px;
+  padding: 5px var(--gitnut-space-lg);
+}
+
+@media (max-width: 760px) {
+  .gitnut-sidebar {
+    position: absolute;
+    z-index: 40;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(300px, 86vw);
+    box-shadow: 20px 0 60px rgb(0 0 0 / 50%);
+  }
+  .gitnut-filterbar .gitnut-search {
+    width: 140px;
+  }
+}
+
+/* ---- add projects ----------------------------------------------------------------------- */
+
+.gitnut-addproj {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gitnut-addproj-path {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.gitnut-addproj-path > .gitnut-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--gitnut-font-mono);
+}
+.gitnut-addproj-panes {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 10px;
+  height: min(52vh, 420px);
+}
+.gitnut-addproj-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--gitnut-border);
+  border-radius: var(--gitnut-radius-md);
+  overflow: hidden;
+}
+.gitnut-addproj-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--gitnut-border);
+  color: var(--gitnut-muted-text);
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-addproj-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px;
+}
+.gitnut-addproj-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: calc(var(--gitnut-row-height) + 4px);
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--gitnut-radius-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.gitnut-addproj-row:hover {
+  background: var(--gitnut-hover);
+}
+.gitnut-addproj-list .gitnut-proj-empty {
+  padding: 8px;
+}
+.gitnut-addproj-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-proj-remove {
+  display: none;
+}
+.gitnut-proj-repo:hover .gitnut-proj-remove {
+  display: inline-flex;
+}
+.gitnut-addproj-row > .gitnut-proj-name,
+.gitnut-addproj-row > .gitnut-tree-hint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gitnut-addproj-row > .gitnut-proj-name {
+  flex-shrink: 0;
+  max-width: 70%;
+}
+.gitnut-addproj-row > input,
+.gitnut-addproj-row > svg {
+  flex: none;
+}
+
+/* ---- appearance ------------------------------------------------------------------------- */
+
+.gitnut-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.gitnut-swatch {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 18%);
+  transition: transform 0.12s;
+}
+.gitnut-swatch:hover {
+  transform: scale(1.08);
+}
+.gitnut-swatch[aria-checked="true"],
+.gitnut-swatch-custom:has(svg) {
+  box-shadow:
+    0 0 0 2px var(--gitnut-background),
+    0 0 0 4px var(--gitnut-focus);
+}
+.gitnut-swatch-custom {
+  background: conic-gradient(#f43f5e, #f59e0b, #10b981, #06b6d4, #6366f1, #d946ef, #f43f5e);
+}
+.gitnut-swatch-custom input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.gitnut-swatch-custom:focus-within {
+  outline: 2px solid var(--gitnut-focus);
+  outline-offset: 2px;
+}
+.gitnut-settings-server-title {
+  margin: 22px 0 0;
+  color: var(--gitnut-muted-text);
+  font-size: var(--gitnut-font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.gitnut-field > .gitnut-segmented {
+  align-self: flex-start;
+}
+
+.gitnut-update-compact {
+  width: var(--gitnut-control-height-sm);
+  padding: 0;
+  border-radius: 999px;
+}
+
+/* ---- servers list (settings) ------------------------------------------------------------- */
+
+.gitnut-server-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--gitnut-border);
+  border-radius: var(--gitnut-radius-md);
+  overflow: hidden;
+}
+.gitnut-server-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 3px 6px 3px 10px;
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-server-row + .gitnut-server-row {
+  border-top: 1px solid var(--gitnut-border);
+}
+.gitnut-server-name {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.gitnut-server-url {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gitnut-server-edit {
+  padding: 6px;
+}
+.gitnut-server-edit .gitnut-input:nth-child(1) {
+  flex: 1 1 120px;
+}
+.gitnut-server-edit .gitnut-input:nth-child(2) {
+  flex: 2 1 200px;
+}
+.gitnut-server-edit .gitnut-input:nth-child(3) {
+  flex: 2 1 160px;
+}
+
+/* ---- image diff ------------------------------------------------------------------------- */
+
+.gitnut-image-diff {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  height: 100%;
+  padding: 12px;
+  overflow: auto;
+}
+.gitnut-image-side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  gap: 6px;
+}
+.gitnut-image-side figcaption {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: var(--gitnut-font-size-sm);
+}
+.gitnut-image-stage {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+  padding: 12px;
+  border: 1px solid var(--gitnut-border);
+  border-radius: var(--gitnut-radius-md);
+  /* checkerboard so transparent pixels are visible */
+  background: repeating-conic-gradient(rgb(127 127 127 / 18%) 0 25%, transparent 0 50%) 0 0 / 16px 16px;
+  overflow: auto;
+}
+.gitnut-image-stage img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  image-rendering: auto;
+}

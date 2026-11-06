@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { getConnection, normalizeUrl, type GitnutConnection, type ServerConfig } from "./connection";
 import { ProviderThemeContext, type GitnutClassNames, type StyleProps } from "./root";
-import { readStored } from "./storage";
 
 export interface ServerEntry {
   config: ServerConfig;
@@ -38,7 +37,7 @@ export interface GitnutProviderProps {
 
 function load(key: string): ServerConfig[] {
   try {
-    const v = JSON.parse(readStored(key) ?? "[]");
+    const v = JSON.parse(localStorage.getItem(key) ?? "[]");
     return Array.isArray(v) ? v.filter((s) => s && typeof s.url === "string") : [];
   } catch {
     return [];

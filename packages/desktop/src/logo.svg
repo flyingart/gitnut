@@ -1,37 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="512" height="512">
-  <title>gitnut</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
   <defs>
-    <linearGradient id="g-bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#16161c"/>
-      <stop offset="1" stop-color="#050507"/>
-    </linearGradient>
-    <linearGradient id="g-main" x1="0" y1="0" x2="0.3" y2="1">
-      <stop offset="0" stop-color="#5b7bff"/>
-      <stop offset="1" stop-color="#3f5df0"/>
-    </linearGradient>
-    <linearGradient id="g-branch" x1="1" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#7c6cff"/>
-      <stop offset="1" stop-color="#b061f7"/>
-    </linearGradient>
-    <radialGradient id="g-glow" cx="0.5" cy="0.42" r="0.55">
-      <stop offset="0" stop-color="#5865f2" stop-opacity="0.28"/>
-      <stop offset="1" stop-color="#5865f2" stop-opacity="0"/>
+    <radialGradient id="d-shell" cx="0.36" cy="0.3" r="0.8">
+      <stop offset="0" stop-color="#a8704f"/>
+      <stop offset="0.6" stop-color="#6e412b"/>
+      <stop offset="1" stop-color="#43261a"/>
     </radialGradient>
+    <linearGradient id="d-ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f9a8d4"/>
+      <stop offset="0.5" stop-color="#c084fc"/>
+      <stop offset="1" stop-color="#818cf8"/>
+    </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#g-bg)"/>
-  <rect width="64" height="64" rx="14" fill="url(#g-glow)"/>
-  <rect x="0.5" y="0.5" width="63" height="63" rx="13.5" fill="none" stroke="#fff" stroke-opacity="0.09"/>
-  <g transform="translate(32 32) scale(0.86) translate(-29.5 -33.2)">
-  <g fill="none" stroke-linecap="round" stroke-width="5">
-    <!-- branch lane: leaves the trunk, forms the bowl of the "g", merges back -->
-    <path stroke="url(#g-branch)" d="M41 19 C37.5 16.6 34.4 15.5 31 15.5 C23.5 15.5 18 21.5 18 28.5 C18 35.5 23.5 41.5 31 41.5 C35 41.5 38.4 39.8 41 37"/>
-    <!-- trunk lane: the stem and descender of the "g" -->
-    <path stroke="url(#g-main)" d="M41 13 V43 C41 52 35.5 56.5 28 56.5 C23.5 56.5 20 55 17.5 52"/>
-  </g>
-  <g stroke="#0b0b10" stroke-width="2.5">
-    <circle cx="41" cy="12.5" r="5" fill="#5b7bff"/>
-    <circle cx="18" cy="28.5" r="5" fill="#a064f8"/>
-    <circle cx="17.5" cy="52" r="4.5" fill="#4562f2"/>
-  </g>
+  <circle cx="64" cy="64" r="55" fill="url(#d-shell)" stroke="url(#d-ring)" stroke-width="8"/>
+  <!-- three coconut eyes = three commits; trunk forks into two branches -->
+  <path d="M64 118 V86 C64 68 44 70 44 50 M64 86 C64 68 84 70 84 50" fill="none" stroke="#fdf2f8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <g stroke="#fdf2f8" stroke-width="5">
+    <circle cx="44" cy="46" r="12" fill="#f472c6"/>
+    <circle cx="84" cy="46" r="12" fill="#6d8cf5"/>
+    <circle cx="64" cy="86" r="11" fill="#a78bfa"/>
   </g>
 </svg>

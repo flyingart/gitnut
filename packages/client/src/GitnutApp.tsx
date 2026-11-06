@@ -21,7 +21,6 @@ import { accentTheme } from "./theme";
 import { UpdateButton } from "./UpdateButton";
 import { Dialog, Empty, IconButton, Popover, useContextMenu } from "./ui";
 import { useViewOptions, type ViewOptions } from "./viewOptions";
-import { readStored } from "./storage";
 
 export type AppView = "log" | "changes" | "all-changes";
 
@@ -63,7 +62,7 @@ export function GitnutApp(props: GitnutAppProps) {
 function loadTabs(key: string | null): { tabs: Tab[]; active: string | null } {
   if (!key) return { tabs: [], active: null };
   try {
-    const v = JSON.parse(readStored(key) ?? "null");
+    const v = JSON.parse(localStorage.getItem(key) ?? "null");
     if (v && Array.isArray(v.tabs)) return v;
   } catch {}
   return { tabs: [], active: null };

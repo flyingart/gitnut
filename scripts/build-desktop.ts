@@ -86,7 +86,8 @@ async function main() {
   if (values.target) tauri.push("--target", triple);
   // Windows installer from macOS / Linux: Tauri's NSIS cross-build (cargo install cargo-xwin; brew install nsis llvm).
   if (platform.startsWith("windows") && process.platform !== "win32") tauri.push("--runner", "cargo-xwin");
-  runLive(tauri, DESKTOP, signing ? { APPLE_SIGNING_IDENTITY: signing.identity } : {});
+  // No certificate: "-" makes Tauri ad hoc sign the whole .app (otherwise x64 bundles end up unsigned).
+  runLive(tauri, DESKTOP, mac ? { APPLE_SIGNING_IDENTITY: signing?.identity ?? "-" } : {});
 
   // 3. copy installers to release/<version>/
   const bundleRoot = join(TAURI, "target", ...(values.target ? [triple] : []), "release", "bundle");

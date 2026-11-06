@@ -116,13 +116,12 @@ component) connects to many daemons and shows all their projects.
   and restart the daemon. Because the daemon serves the web client, this updates both.
 - **R-UPD-3** `GITNUT_SITE_URL` is baked in at build time (manifest = `<site>/manifest.json`, which
   lists the download URLs). Builds fail without it (`--dev` for local builds); the client has no
-  field for it (CLI override only). The client shows an update icon next to the logo when a
+  field or setting for it (`GITNUT_MANIFEST_URL` in the daemon's environment overrides it). The client shows an update icon next to the logo when a
   server has an update, and Settings show the client and desktop app versions.
 - **R-UPD-4** Install with one command: `curl -fsSL <site>/install.sh | sh` (Linux/macOS) and
   `irm <site>/install.ps1 | iex` (Windows).
 - **R-UPD-5** Desktop apps (macOS, Windows, Linux) built with Tauri v2. Starting the app starts
-  the daemon; the app shows the web client served by that daemon. The desktop app
-  keeps its daemon in the user data folder so web-client updates update it too. The app updates
+  the daemon; the app shows the web client served by that daemon. The app updates
   itself with the Tauri updater: `<site>/desktop/latest.json` (from the GitHub release), checked
   every 10 minutes, signed with our updater key. One update path: the client's update icon and
   Settings button drive it for the app's own daemon; that daemon never updates by itself.

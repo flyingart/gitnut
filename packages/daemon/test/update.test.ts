@@ -31,10 +31,12 @@ let c: Client;
 beforeAll(async () => {
   process.env.GITNUT_EXEC_PATH = exe;
   manifest = { version: "99.0.0", notes: "big one", downloadPage: `${base}/download`, assets: { [platform]: { url: `${base}/dl/${binaryName(platform)}` } } };
-  env = await startDaemon({ update: { manifestUrl: `${base}/manifest.json`, autoCheck: true } }, {}, { restart: () => restarts++ });
+  process.env.GITNUT_MANIFEST_URL = `${base}/manifest.json`;
+  env = await startDaemon({ update: { autoCheck: true } }, {}, { restart: () => restarts++ });
   c = await Client.connect(env.wsUrl, bearer(env.token));
 });
 afterAll(async () => {
+  delete process.env.GITNUT_MANIFEST_URL;
   delete process.env.GITNUT_EXEC_PATH;
   c.close();
   await env.d.stop();
@@ -94,10 +96,12 @@ test("R-UPD-2: bad or missing checksum is refused and the binary stays", async (
 test("R-UPD-2: up to date and no manifest URL", async () => {
   manifest.version = VERSION;
   expect((await c.send("update.apply")).error.code).toBe("conflict");
-  await c.call("settings.update", { patch: { update: { manifestUrl: "" } } });
+  delete process.env.GITNUT_MANIFEST_URL;
   const info = await c.call("update.check");
   expect(info.error).toContain("updates are off");
-  await c.call("settings.update", { patch: { update: { manifestUrl: `${base}/manifest.json` } } });
+  process.env.GITNUT_MANIFEST_URL = `${base}/manifest.json`;
+  // and clients can't point the daemon at another update source
+  expect((await c.send("settings.update", { patch: { update: { manifestUrl: "http://evil.test/m.json" } } })).error.message).toContain("unknown setting");
 });
 
 test("R-UPD-3: running from source refuses update.apply without GITNUT_EXEC_PATH", async () => {

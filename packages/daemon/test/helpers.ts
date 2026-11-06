@@ -92,7 +92,7 @@ export async function startDaemon(settings: Partial<Settings> = {}, overrides: O
   const home = tmp("gitnut-home-");
   const cfg = loadConfig(home);
   // Auth on unless a test says otherwise, so the auth paths stay covered (the shipped default is off).
-  cfg.settings = { ...cfg.settings, port: 0, pollIntervalMs: 250, auth: { ...cfg.settings.auth, enabled: true }, update: { manifestUrl: "", autoCheck: false }, ...settings };
+  cfg.settings = { ...cfg.settings, port: 0, pollIntervalMs: 250, auth: { ...cfg.settings.auth, enabled: true }, update: { autoCheck: false }, ...settings };
   saveConfig(home, cfg);
   const d = new Daemon({ home, overrides, log: () => {}, restart: opts.restart });
   await d.start();

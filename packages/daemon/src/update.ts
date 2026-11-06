@@ -1,11 +1,16 @@
 import { chmodSync, existsSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { basename } from "node:path";
-import { compareVersions, platformOf, type Settings, type UpdateInfo, type UpdateManifest } from "@gitnut/commons";
+import { compareVersions, platformOf, type Settings, type UpdateInfo, type UpdateManifest, parseSha256Sums } from "@gitnut/commons";
 import { fail } from "./errors";
 import { BUILD_MANIFEST_URL, IS_COMPILED, VERSION } from "./version";
 
-export const manifestUrl = (s: Settings) => s.update.manifestUrl || BUILD_MANIFEST_URL;
+/**
+ * Update manifest: baked in at build time (GITNUT_SITE_URL). GITNUT_MANIFEST_URL in the daemon's own
+ * environment overrides it (tests, self-hosted mirrors). Never a setting: clients can change settings,
+ * and whoever picks the manifest picks the binary the daemon installs.
+ */
+export const manifestUrl = (_s?: Settings) => process.env.GITNUT_MANIFEST_URL || BUILD_MANIFEST_URL;
 
 async function fetchManifest(url: string): Promise<UpdateManifest> {
   const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
@@ -51,10 +56,8 @@ async function expectedSha(assetUrl: string, sha256?: string): Promise<string> {
   const res = await fetch(sumsUrl, { signal: AbortSignal.timeout(15_000) });
   if (!res.ok) fail("internal", `no checksum: ${sumsUrl} HTTP ${res.status}`);
   const name = decodeURIComponent(basename(new URL(assetUrl).pathname));
-  for (const line of (await res.text()).split("\n")) {
-    const m = /^([0-9a-f]{64})\s+\*?(.+)$/i.exec(line.trim());
-    if (m && m[2] === name) return m[1].toLowerCase();
-  }
+  const sum = parseSha256Sums(await res.text())[name];
+  if (sum) return sum.toLowerCase();
   return fail("internal", `no checksum for ${name} in ${sumsUrl}`);
 }
 
@@ -81,7 +84,12 @@ export async function applyUpdate(s: Settings): Promise<string> {
     rmSync(`${target}.old`, { force: true });
     if (existsSync(target)) renameSync(target, `${target}.old`);
   }
-  renameSync(tmp, target);
+  try {
+    renameSync(tmp, target);
+  } catch (e) {
+    if (existsSync(`${target}.old`) && !existsSync(target)) renameSync(`${target}.old`, target); // keep a working binary
+    throw e;
+  }
   return info.latest!;
 }
 

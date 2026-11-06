@@ -4,6 +4,8 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Client, bearer, startDaemon, tmp } from "./helpers";
 import { pickTailscaleIp, resolveBind } from "../src/net";
+import { hostAllowed } from "../src/auth";
+import { hostname } from "node:os";
 import { Daemon } from "../src/server";
 
 type Env = Awaited<ReturnType<typeof startDaemon>>;
@@ -201,5 +203,46 @@ describe("bind modes", () => {
     // depends on the machine: a Tailscale IP when Tailscale runs (dev boxes), a clear error otherwise (CI)
     if (pickTailscaleIp(networkInterfaces())) expect(resolveBind("tailscale")).toMatch(/^100\./);
     else expect(() => resolveBind("tailscale")).toThrow(/no Tailscale IPv4/);
+  });
+});
+
+describe("browser protections (default: auth off, localhost)", () => {
+  let open: Awaited<ReturnType<typeof startDaemon>>;
+  beforeAll(async () => {
+    open = await startDaemon({ auth: { enabled: false, token: "t".repeat(43) } });
+  });
+  afterAll(() => open.d.stop());
+  const rpc = (headers: Record<string, string>) =>
+    fetch(`${open.url}/api/rpc`, { method: "POST", headers: { "content-type": "text/plain", ...headers }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "settings.get" }) });
+
+  test("R-DAEMON-5: DNS rebinding: a foreign host name gets no token-free access", async () => {
+    const port = new URL(open.url).port;
+    expect((await rpc({ host: `evil.test:${port}`, origin: `http://evil.test:${port}` })).status).toBe(403);
+    expect((await rpc({ host: `127.0.0.1:${port}`, origin: `http://127.0.0.1:${port}` })).status).toBe(200);
+    // the token still works from anywhere
+    expect((await rpc({ host: `evil.test:${port}`, origin: `http://evil.test:${port}`, authorization: `Bearer ${open.token}` })).status).toBe(200);
+  });
+
+  test("R-DAEMON-5: host names a website can't point here are accepted, others not", () => {
+    const req = (host: string) => new Request("http://x/", { headers: { host } });
+    for (const ok of ["127.0.0.1:7420", "[::1]:7420", "localhost:7420", "100.101.102.103:7420", "my-box.tail1234.ts.net:7420", "my-mac.local:7420", `${hostname()}:7420`])
+      expect([ok, hostAllowed(req(ok), [])]).toEqual([ok, true]);
+    for (const bad of ["evil.test:7420", "gitnut.dev", "127.0.0.1.evil.test"]) expect([bad, hostAllowed(req(bad), [])]).toEqual([bad, false]);
+    expect(hostAllowed(req("dash.example.com"), ["https://dash.example.com"])).toBe(true);
+  });
+
+  test("R-DAEMON-5: no open redirect after a token link; pages can't be framed by other sites", async () => {
+    const res = await fetch(`${open.url}//evil.example/x?token=abc`, { redirect: "manual" });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/evil.example/x");
+    const page = await fetch(`${open.url}/`);
+    expect(page.headers.get("content-security-policy")).toContain("frame-ancestors 'self'");
+    expect((await fetch(`${open.url}/%E0%A4%A`)).status).toBe(400);
+  });
+
+  test("R-DAEMON-5: health tells other websites nothing about the machine", async () => {
+    const foreign = await (await fetch(`${open.url}/api/health`, { headers: { origin: "https://evil.example" } })).json();
+    expect(foreign.name).toBeUndefined();
+    expect((await (await fetch(`${open.url}/api/health`)).json()).name).toBeTruthy();
   });
 });

@@ -12,6 +12,7 @@ import {
   type Settings,
   type SettingsPatch,
   type UpdateInfo,
+  type HealthResponse,
 } from "@gitnut/commons";
 import { fetchAll } from "./actions";
 import { applyPatch, homeDir, loadConfig, saveConfig, type Config } from "./config";
@@ -278,7 +279,11 @@ export class Daemon {
       const cors = { "access-control-allow-origin": "*", "access-control-allow-methods": "GET, OPTIONS" };
       if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
       // originAllowed: whether this browser page may connect without a token (no-auth / cookie access)
-      return this.json({ ok: true, name: this.name, version: VERSION, protocol: PROTOCOL_VERSION, authRequired: s.auth.enabled, originAllowed: originAllowed(req, s.allowedOrigins) }, 200, cors);
+      // any website may ask (CORS *): the machine's name only goes to its own pages and non-browsers
+      const own = originAllowed(req, s.allowedOrigins);
+      const health: HealthResponse = { ok: true, version: VERSION, protocol: PROTOCOL_VERSION, authRequired: s.auth.enabled, originAllowed: own };
+      if (own) health.name = this.name;
+      return this.json(health, 200, cors);
     }
 
     if (p === "/ws") {
@@ -324,11 +329,15 @@ export class Daemon {
     const token = url.searchParams.get("token");
     if (token !== null) {
       url.searchParams.delete("token");
-      const headers: Record<string, string> = { location: url.pathname + url.search + url.hash };
+      // "/" + path without leading slashes: "//evil.example/x" must stay on this host (no open redirect)
+      const headers: Record<string, string> = { location: `/${url.pathname.replace(/^\/+/, "")}${url.search}${url.hash}` };
       if (tokenEquals(token, s.auth.token)) headers["set-cookie"] = authCookie(s.auth.token, isHttps(req));
       return new Response(null, { status: 302, headers });
     }
-    return serveWeb(this.web, p);
+    const res = serveWeb(this.web, p);
+    // only this daemon's own pages and allowedOrigins may frame the client (clickjacking)
+    res.headers.set("content-security-policy", `frame-ancestors 'self'${s.allowedOrigins.map((o) => ` ${o}`).join("")}`);
+    return res;
   }
 }
 

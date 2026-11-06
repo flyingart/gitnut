@@ -37,8 +37,6 @@ export interface Settings {
   /** Extra browser origins allowed to use cookie / no-auth access (for embedding). */
   allowedOrigins: string[];
   update: {
-    /** URL of the update manifest (`UpdateManifest`). Empty = updates off. */
-    manifestUrl: string;
     autoCheck: boolean;
   };
 }
@@ -65,7 +63,7 @@ export const DEFAULT_SETTINGS: Omit<Settings, "auth"> & { auth: { enabled: boole
   autoFetchMinutes: 0,
   hideInternalRefs: true,
   allowedOrigins: [],
-  update: { manifestUrl: "", autoCheck: true },
+  update: { autoCheck: true },
 };
 
 /** Settings that need the HTTP listener to restart when they change. */

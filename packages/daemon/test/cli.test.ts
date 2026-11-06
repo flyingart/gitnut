@@ -37,8 +37,7 @@ describe("cli", () => {
     expect(cfg().settings.allowedOrigins).toEqual(["https://a.example", "https://b.example"]);
     run(["config", "set", "exclude", "node_modules, dist"]);
     expect(cfg().settings.exclude).toEqual(["node_modules", "dist"]);
-    run(["config", "set", "update.manifestUrl", "https://gitnut.example/manifest.json"]);
-    expect(run(["config", "get", "update.manifestUrl"]).out).toBe("https://gitnut.example/manifest.json");
+    expect(run(["config", "set", "update.manifestUrl", "https://evil.example/m.json"]).code).toBe(1); // not a setting
     expect(run(["config", "set", "port", "abc"]).code).toBe(1);
     expect(run(["config", "set", "serveWeb", "maybe"]).code).toBe(1);
     expect(run(["config", "set", "bind", "somewhere"]).code).toBe(1);
@@ -92,8 +91,7 @@ describe("cli", () => {
   });
 
   test("R-UPD-2: update --check without a manifest URL", () => {
-    run(["config", "set", "update.manifestUrl", ""]);
-    const r = run(["update", "--check"]);
+    const r = run(["update", "--check"], { GITNUT_MANIFEST_URL: "" });
     expect(r.code).toBe(1);
     expect(r.out).toContain("updates are off");
   });

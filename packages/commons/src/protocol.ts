@@ -158,6 +158,18 @@ export interface FileContent {
   image?: { mime: string; base64: string };
 }
 
+/** `GET /api/health`: no auth, CORS for everyone (used to probe a daemon before connecting). */
+export interface HealthResponse {
+  ok: true;
+  version: string;
+  protocol: number;
+  authRequired: boolean;
+  /** Whether the asking page may connect without a token (auth off there, or its own page). */
+  originAllowed: boolean;
+  /** Only for the daemon's own pages and non-browser clients. */
+  name?: string;
+}
+
 export interface UpdateInfo {
   current: string;
   latest: string | null;

@@ -34,7 +34,13 @@ const NOT_BUILT = `<!doctype html><meta charset="utf-8"><title>gitnut</title>
 
 /** Serve a web asset with SPA fallback to index.html. */
 export function serveWeb(web: { dir: string | null; embedded: WebAssets | null }, pathname: string): Response {
-  let path = normalize(decodeURIComponent(pathname)).replace(/\\/g, "/");
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return new Response("bad request", { status: 400 });
+  }
+  let path = normalize(decoded).replace(/\\/g, "/");
   if (path.endsWith("/")) path += "index.html";
   let file = lookup(web, path);
   // Unknown paths without an extension are client routes.

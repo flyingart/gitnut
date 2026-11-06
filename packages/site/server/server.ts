@@ -1,8 +1,10 @@
+import type { Server } from "bun";
 import { existsSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import { join, normalize } from "node:path";
 import { DESKTOP_ASSETS, SHA256SUMS, assetFile, assetUrl, buildManifest, parseSha256Sums, type UpdateManifest } from "@gitnut/commons";
 import { assetResponse, fetchReleases, type Release } from "./github";
+import { createTracker, platformOf, sourceOf } from "./stats";
 
 // The Astro build (`bun run build`): pages plus everything from public/.
 const DIST = join(import.meta.dir, "..", "dist");
@@ -59,6 +61,7 @@ export function createSite(env: Record<string, string | undefined> = process.env
   // The public URL comes only from GITNUT_SITE_URL, never from Host / X-Forwarded-* headers: it goes
   // into install scripts, the manifest and redirects, which a shared cache could otherwise poison.
   const canonical = env.GITNUT_SITE_URL?.trim().replace(/\/+$/, "") || "https://gitnut.dev";
+  const track = createTracker(env, canonical, fetchImpl);
   const sponsors = { github: link(env.GITNUT_SPONSOR_GITHUB), kofi: link(env.GITNUT_SPONSOR_KOFI), paypal: link(env.GITNUT_SPONSOR_PAYPAL) };
 
   /** Text of a small file of the latest release (null when missing or unreadable). */
@@ -92,7 +95,8 @@ export function createSite(env: Record<string, string | undefined> = process.env
     return new Response(text, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-cache" } });
   }
 
-  return async function handle(req: Request): Promise<Response> {
+  /** `ip`: the socket's address (Bun's server.requestIP), for download statistics behind no proxy. */
+  return async function handle(req: Request, ip?: string): Promise<Response> {
     const { pathname } = new URL(req.url);
     if (req.method !== "GET" && req.method !== "HEAD") return new Response("method not allowed", { status: 405 });
     try {
@@ -132,7 +136,10 @@ export function createSite(env: Record<string, string | undefined> = process.env
       const body = { version: latest.version, notes: latest.items.map((i) => `- ${i.text}`).join("\n"), pub_date: latest.publishedAt, platforms };
       return Response.json(body, { headers: { "cache-control": "public, max-age=60" } });
     }
-    if (pathname === "/install.sh" || pathname === "/install.ps1") return installScript(pathname.slice(1), req);
+    if (pathname === "/install.sh" || pathname === "/install.ps1") {
+      if (latest) track(req, ip, "install_script", { script: pathname.slice(1), version: latest.version, source: sourceOf(req.headers.get("user-agent") ?? "") });
+      return installScript(pathname.slice(1), req);
+    }
     if (pathname.startsWith("/download/")) {
       if (!latest) return noRelease();
       const file = assetFile(decodeURIComponent(pathname.slice("/download/".length)), latest.version);
@@ -146,7 +153,12 @@ export function createSite(env: Record<string, string | undefined> = process.env
     if (pathname.startsWith("/releases/")) {
       const [ver, file, ...rest] = decodeURIComponent(pathname.slice("/releases/".length)).split("/");
       const asset = !rest.length ? releases.find((r) => r.version === ver)?.assets[file] : undefined;
-      return asset ? assetResponse(asset, token, fetchImpl) : new Response("not found", { status: 404 });
+      if (!asset) return new Response("not found", { status: 404 });
+      // every hand-out of a release file counts once (the /download/<key> buttons redirect here)
+      if (!file.endsWith(".sig") && file !== SHA256SUMS && req.method === "GET") {
+        track(req, ip, "file_download", { file, version: ver, platform: platformOf(file, ver), source: sourceOf(req.headers.get("user-agent") ?? "") });
+      }
+      return assetResponse(asset, token, fetchImpl);
     }
 
     // Search engines get the canonical origin, never a forwarded host.
@@ -182,7 +194,7 @@ if (import.meta.main) {
   const server = Bun.serve({
     port: Number(process.env.PORT ?? 7431),
     hostname: process.env.HOST ?? "0.0.0.0",
-    fetch: createSite(),
+    fetch: ((handle) => (req: Request, srv: Server<unknown>) => handle(req, srv.requestIP(req)?.address))(createSite()),
   });
   console.log(`gitnut site on http://${server.hostname}:${server.port}`);
 }

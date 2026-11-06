@@ -7,7 +7,7 @@ const dynamic = ["/manifest.json", "/desktop/", "/install.sh", "/install.ps1", "
 
 // Static pages only; in production server/server.ts serves dist/ plus the dynamic routes (R-SITE-2).
 export default defineConfig({
-  site: "https://gitnut.dev",
+  site: process.env.GITNUT_SITE_URL?.trim().replace(/\/+$/, "") || "https://gitnut.dev",
   output: "static",
   // dist/changelog.html etc., the paths the Bun server maps clean URLs to.
   build: { format: "file" },

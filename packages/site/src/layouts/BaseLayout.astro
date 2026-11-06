@@ -1,4 +1,9 @@
 ---
+// Self-hosted, cookieless Rybbit analytics (see /privacy): no cookies, nothing stored in the browser,
+// so no cookie banner. Only when the build has them (GITNUT_RYBBIT_URL + GITNUT_RYBBIT_SITE_ID, Coolify env): forks get none.
+const rybbitUrl = process.env.GITNUT_RYBBIT_URL?.trim().replace(/\/+$/, "");
+const rybbitSite = process.env.GITNUT_RYBBIT_SITE_ID?.trim();
+const rybbitScript = rybbitUrl && rybbitSite ? `${rybbitUrl}/api/script.js?siteId=${encodeURIComponent(rybbitSite)}` : null;
 import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
 
@@ -48,9 +53,7 @@ const image = new URL("/og.png", Astro.site).href;
   <link rel="manifest" href="/site.webmanifest">
   <slot name="head" />
   <link rel="stylesheet" href="/style.css?v=6">
-  <!-- Self-hosted, cookieless Rybbit analytics (see /privacy). It sets no cookies and stores nothing in the
-       browser, so the site needs no cookie banner. -->
-  <script is:inline src="https://pulse.flyingart.dev/api/script.js?siteId=2f92cca69f3e" defer></script>
+  {rybbitScript && <script is:inline src={rybbitScript} defer></script>}
   <slot name="scripts" />
 </head>
 <body>

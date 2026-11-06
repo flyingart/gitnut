@@ -1,6 +1,6 @@
 [package]
 name = "gitnut-desktop"
-version = "0.1.3"
+version = "0.1.4"
 description = "GitNut desktop app: starts the local gitnut daemon and shows its web client"
 authors = ["Flying Art"]
 license = "Apache-2.0"

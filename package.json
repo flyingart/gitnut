@@ -1,6 +1,6 @@
 {
   "name": "gitnut",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "Remote-first git client with an IntelliJ-style log graph and diff viewer.",
   "license": "Apache-2.0",

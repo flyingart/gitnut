@@ -88,9 +88,14 @@ nav.top { display: flex; align-items: center; justify-content: space-between; pa
 .wordmark { color: #fff; font-weight: 700; letter-spacing: -0.03em; font-size: 1.15rem; }
 .wordmark span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
 nav.top .links { display: flex; gap: 0.25rem; align-items: center; }
-nav.top .links a { color: var(--muted); padding: 0.35rem 0.7rem; border-radius: var(--radius); font-size: 0.9rem; transition: color 0.15s, background 0.15s; }
+nav.top .links a { white-space: nowrap; color: var(--muted); padding: 0.35rem 0.7rem; border-radius: var(--radius); font-size: 0.9rem; transition: color 0.15s, background 0.15s; }
 nav.top .links a:hover { color: var(--foreground); background: rgb(255 255 255 / 6%); }
 nav.top .links a.keep { color: var(--foreground); border: 1px solid color-mix(in srgb, var(--violet) 40%, transparent); background: color-mix(in srgb, var(--violet) 10%, transparent); }
+/* Changelog and GitHub are in the footer too: they go first when the bar gets narrow. */
+@media (max-width: 860px) {
+  nav.top .links a { padding: 0.35rem 0.5rem; }
+  nav.top .links a.wide { display: none; }
+}
 nav.top .links a.keep:hover { border-color: color-mix(in srgb, var(--pink) 60%, transparent); background: color-mix(in srgb, var(--pink) 14%, transparent); }
 
 /* buttons */
@@ -306,6 +311,15 @@ h2 { font-size: clamp(1.7rem, 3.5vw, 2.4rem); letter-spacing: -0.035em; line-hei
 .release-line #dl-version:empty { display: none; }
 .release-line a { color: #f9a8d4; }
 .release-line a:hover { color: #fff; }
+
+/* pricing */
+.pricing { display: flex; flex-wrap: wrap; align-items: center; gap: 1.4rem 2.4rem; margin-top: 1.6rem; padding: 1.8rem; border-color: color-mix(in srgb, var(--pink) 35%, transparent); background: linear-gradient(135deg, rgb(244 114 198 / 10%), rgb(109 140 245 / 8%)), var(--glass); }
+.price { display: grid; }
+.price .amount { font-size: 3.2rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.price .per { color: var(--muted); font-size: 0.85rem; margin-top: 0.35rem; }
+.pricing-text { flex: 1 1 22rem; display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.6rem; }
+.pricing-text p { flex: 1 1 18rem; margin: 0; color: var(--muted); }
+.pricing [hidden] { display: none; }
 
 /* support */
 .support { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 1rem; margin-top: 1.6rem; }

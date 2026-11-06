@@ -183,6 +183,19 @@ describe("site", () => {
     }
   });
 
+  test("R-SITE-5: Pricing says GitNut is free; its Ko-fi button stays hidden until /site.json has GITNUT_SPONSOR_KOFI", async () => {
+    const html = await Bun.file(join(DIST, "index.html")).text();
+    expect(html).toContain('<section id="pricing">');
+    expect(html).toContain('<a href="/#pricing">Pricing</a>');
+    expect(html).toContain("free and open source");
+    // No href in the static page: app.js sets it from /site.json and only then shows the button and the ask.
+    expect(html).toContain('<a class="btn primary" id="kofi" target="_blank" rel="noopener" hidden>');
+    expect(html).toContain('<span id="kofi-ask" hidden>');
+    expect(await (await site().get("/site.json")).json()).toEqual({ sponsors: {} });
+    const s = site({ ...ENV, GITNUT_SPONSOR_KOFI: "https://ko-fi.com/example" });
+    expect(await (await s.get("/site.json")).json()).toEqual({ sponsors: { kofi: "https://ko-fi.com/example" } });
+  });
+
   test("R-SITE-1: every page comes from the shared layout: one Rybbit script, one canonical, the footer links", async () => {
     const s = site();
     for (const path of ["/", "/changelog", "/privacy", "/terms"]) {

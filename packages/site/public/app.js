@@ -176,11 +176,16 @@ function mockShot() {
 }
 
 // Donation buttons: only the links the site server has configured (GITNUT_SPONSOR_*); none = no block.
+// The Ko-fi link also fills the Pricing button.
 const SPONSORS = { github: "GitHub Sponsors", kofi: "Ko-fi", paypal: "PayPal" };
 fetch("/site.json")
   .then((r) => (r.ok ? r.json() : {}))
   .catch(() => ({}))
   .then(({ sponsors = {} }) => {
+    if (sponsors.kofi) {
+      $("kofi").href = sponsors.kofi;
+      $("kofi").hidden = $("kofi-ask").hidden = false;
+    }
     const links = Object.entries(SPONSORS).filter(([k]) => sponsors[k]).map(([k, label]) => {
       const a = document.createElement("a");
       a.className = k === "github" ? "btn primary" : "btn";

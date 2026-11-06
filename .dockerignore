@@ -1,0 +1,9 @@
+**/node_modules
+.git
+.cache
+dist
+release
+packages/desktop/src-tauri/target
+packages/desktop/src-tauri/binaries
+test-results
+playwright-report

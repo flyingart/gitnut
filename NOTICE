@@ -1,0 +1,13 @@
+GitNut
+Copyright 2026 Flying Art (https://flyingart.dev)
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+Forks and redistributions must keep this NOTICE file and must credit
+"GitNut by Flying Art (https://github.com/flyingart/gitnut)" in their
+documentation or about screen.
+
+This product includes software ported from IntelliJ IDEA Community Edition
+(https://github.com/JetBrains/intellij-community), Copyright JetBrains s.r.o.,
+licensed under the Apache License, Version 2.0. Ported parts are marked in the
+source with "Ported from IntelliJ" comments and live mainly in
+packages/commons/src/graph and packages/commons/src/changes.

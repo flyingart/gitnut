@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+/release/
+/.cache/
+packages/desktop/src-tauri/target/
+packages/desktop/src-tauri/binaries/
+packages/daemon/src/generated/
+test-results/
+playwright-report/
+packages/desktop/src-tauri/gen/
+.env

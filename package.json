@@ -1,0 +1,40 @@
+{
+  "name": "gitnut",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Remote-first git client with an IntelliJ-style log graph and diff viewer.",
+  "license": "Apache-2.0",
+  "author": "Flying Art (https://flyingart.dev)",
+  "homepage": "https://gitnut.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flyingart/gitnut.git"
+  },
+  "bugs": "https://github.com/flyingart/gitnut/issues",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run scripts/dev.ts",
+    "test": "bun test",
+    "typecheck": "tsc -p packages/commons && tsc -p packages/daemon && tsc -p packages/client && tsc -p packages/web && tsc -p packages/site && tsc -p scripts",
+    "build:web": "bun run --cwd packages/web build",
+    "build:daemon": "bun run scripts/build-daemon.ts",
+    "build:desktop": "bun run scripts/build-desktop.ts",
+    "release": "bun run scripts/release.ts",
+    "screenshots": "bun run scripts/screenshots.ts",
+    "lint": "biome lint .",
+    "check": "bun run typecheck && bun run lint && bun test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.6",
+    "@gitnut/commons": "workspace:*",
+    "@happy-dom/global-registrator": "^21.0.4",
+    "@playwright/test": "^1.65.0",
+    "@testing-library/react": "^16.3.3",
+    "@types/bun": "^1.4.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^7.0.2"
+  }
+}

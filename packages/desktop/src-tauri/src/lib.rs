@@ -214,8 +214,8 @@ fn start(window: &WebviewWindow) -> Result<Url, (String, String)> {
     if !token.is_empty() {
         url.query_pairs_mut().append_pair("token", &token);
     }
-    // the web client shows it in Settings
-    url.query_pairs_mut().append_pair("app", env!("CARGO_PKG_VERSION"));
+    // the web client shows it in Settings; the bundle version (what the updater compares), not Cargo.toml
+    url.query_pairs_mut().append_pair("app", &window.app_handle().package_info().version.to_string());
     Ok(url)
 }
 

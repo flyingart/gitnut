@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import { dropConnection, normalizeUrl, type ServerConfig } from "./connection";
 import { useConnectionState, useServers, type ServerEntry } from "./provider";
@@ -36,11 +36,32 @@ export function ServersPanel(props: ServersPanelProps) {
   );
 }
 
+/**
+ * True when a daemon is reachable but refuses this page without a token (auth off there, so only its
+ * own page may connect token-free): the row then says what to do instead of showing a grey dot.
+ */
+function useNeedsToken(entry: ServerEntry, state: string): boolean {
+  const [needs, setNeeds] = useState(false);
+  useEffect(() => {
+    if (state === "open" || entry.sameOrigin || entry.conn.token) return setNeeds(false);
+    let live = true;
+    fetch(`${entry.conn.url}/api/health`)
+      .then((r) => r.json())
+      .then((h: { originAllowed?: boolean; authRequired?: boolean }) => live && setNeeds(h.originAllowed === false || !!h.authRequired))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [entry, state]);
+  return needs;
+}
+
 function ServerRow({ entry }: { entry: ServerEntry }) {
   const cx = useCx();
   const { addServer, removeServer } = useServers();
   const { state, info } = useConnectionState(entry.conn);
   const [edit, setEdit] = useState<ServerConfig | null>(null);
+  const needsToken = useNeedsToken(entry, state);
   const remove = () => {
     if (!confirm(`Remove ${entry.conn.name} (${entry.conn.url}) from this client? The daemon keeps running.`)) return;
     removeServer(entry.conn.url);
@@ -82,6 +103,11 @@ function ServerRow({ entry }: { entry: ServerEntry }) {
       <span className={`gitnut-status-dot gitnut-state-${state}`} title={state} />
       <span className="gitnut-server-name">{entry.conn.name}</span>
       <span className="gitnut-mono gitnut-muted gitnut-server-url">{entry.conn.url}</span>
+      {needsToken && (
+        <span className="gitnut-error-text gitnut-server-hint" title="Run `gitnut token` on that machine, then Edit and paste it">
+          needs its access token
+        </span>
+      )}
       <span className="gitnut-toolbar-spacer" />
       {entry.sameOrigin ? (
         <span className="gitnut-tree-hint">serves this page</span>

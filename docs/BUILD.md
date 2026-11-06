@@ -94,35 +94,29 @@ binaries build on any OS.
 ## Release
 
 GitHub releases are the source of truth: the website reads them, nothing else needs updating.
+Everything is interactive, no file shuffling between machines:
 
 ```sh
-cat > notes.md <<'MD'
-### New
-- Image diffs
-### Improved
-- Faster graph
-### Fixed
-- Footer cropped at the bottom
-MD
-bun run release 0.3.0                                   # Linux: CLI binaries + Linux desktop
-# macOS / Windows installers: build them on the Mac (below), copy into release/0.3.0/
-bun run release 0.3.0 --skip-desktop --publish --notes notes.md [--title "…"]
+bun run setup      # once per build machine: checks tools, gh login, .env, updater key, macOS signing
+bun run release    # menu: start / build / publish
 ```
 
-`release.ts`:
-
-1. sets the version in every `package.json`, `tauri.conf.json`, `Cargo.toml` and `Cargo.lock`;
-2. builds the web client and all daemon binaries into `release/<version>/`;
-3. builds the desktop app for the host OS (skipped with `--skip-desktop`), including its signed
-   updater files, and picks up installers already copied into the folder;
-4. writes `SHA256SUMS` over every file and lists what is still missing;
-5. `--publish` creates the GitHub release `v<version>` with every file (gh CLI). Notes use
-   `### New` / `### Improved` / `### Fixed` with `- ` bullets: they become the changelog page, the
-   daemon update notes and the desktop update dialog.
+1. **Start** (any machine, on an up-to-date `main`): asks the version (default: next patch), sets it in
+   every `package.json`, `tauri.conf.json`, `Cargo.toml`, `Cargo.lock` and `bun.lock`, opens the
+   version PR (it merges itself when CI is green) and creates the draft GitHub release `v<version>`.
+2. **Build** (each build machine, after the PR merged): pulls `main` if needed, asks what to build
+   here and uploads the files to the draft, with a checksum list.
+   - Linux: the 5 CLI binaries (any OS can build them) and the Linux AppImage + `.deb`.
+   - macOS: both `.dmg`s (signed and notarized when set up, see below), their updater files and,
+     with `cargo-xwin` + `nsis`, the Windows installer. A Mac alone covers everything but Linux.
+   - Windows: the Windows installer.
+3. **Publish** (any machine): lists missing files, merges the checksum lists into `SHA256SUMS`, opens
+   your editor for the notes (`### New` / `### Improved` / `### Fixed` with `- ` bullets: they become
+   the changelog page, the daemon update notes and the desktop update dialog), and publishes.
 
 The site picks the release up within `GITNUT_GITHUB_REFRESH_MINUTES` (default 10) or on restart.
-Files added later: `gh release upload v0.3.0 <file>`, then re-run with `--skip-desktop` and
-`gh release upload v0.3.0 release/0.3.0/SHA256SUMS --clobber`. `release/` is gitignored.
+Non-interactive: `bun run release start 0.3.0 --yes`, `bun run release build --yes`,
+`bun run release publish --yes --notes notes.md`. Files land in `release/<version>/` (gitignored).
 
 ## Website (Coolify)
 
@@ -240,8 +234,8 @@ bun run build:desktop --version 0.2.0 --target x86_64-pc-windows-msvc
 
 ## How updates flow
 
-1. `bun run release X --publish` creates the GitHub release; the site's `/manifest.json` and
-   `/desktop/latest.json` offer X within 10 minutes.
+1. `bun run release` publishes the GitHub release; the site's `/manifest.json` and
+   `/desktop/latest.json` offer it within 10 minutes.
 2. **Daemon** (CLI install or inside the desktop app): checks `<site>/manifest.json`. `gitnut update`
    or the update icon next to the logo downloads `gitnut-<platform>`, verifies it against
    `SHA256SUMS`, replaces its binary and restarts. The web client is served by the daemon, so it

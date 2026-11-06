@@ -157,7 +157,7 @@ function mockShot() {
     diff += `<rect x="830" y="${y - 3}" width="14" height="6" rx="3" fill="rgb(255 255 255 / 12%)"/>`;
     diff += `<rect x="${856 + (i % 3) * 16}" y="${y - 4}" width="${90 + ((i * 53) % 200)}" height="8" rx="4" fill="${kind === "add" ? "rgb(47 191 143 / 55%)" : kind === "del" ? "rgb(240 82 82 / 50%)" : "rgb(255 255 255 / 20%)"}"/>`;
   }
-  const side = ["laptop", "  gitnut", "  cabby-web", "dev-vps", "  metar-cloud", "  glassout", "  t3code"]
+  const side = ["laptop", "  acme-web", "  api", "dev-box", "  docs", "  worker", "  infra"]
     .map((s, i) => {
       const y = 70 + i * 30;
       const server = !s.startsWith(" ");

@@ -1,7 +1,10 @@
 import pkg from "../package.json";
 
-/** Version of this client build (kept in sync by the release script). */
-export const CLIENT_VERSION: string = pkg.version;
+// Replaced by the web build with the release version (packages/web/vite.config.ts).
+declare const __GITNUT_VERSION__: string;
+
+/** Version of this client build: the release version it was built for, else package.json. */
+export const CLIENT_VERSION: string = typeof __GITNUT_VERSION__ === "string" ? __GITNUT_VERSION__ : pkg.version;
 
 /** Version of the GitNut desktop app around this page, if any: it opens the client with `?app=<version>`. */
 export function desktopAppVersion(): string | null {

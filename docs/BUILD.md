@@ -43,10 +43,14 @@ loads it for every script).
 | | `GITNUT_RYBBIT_API_KEY` | no | Rybbit API key (runtime only) for server-side `file_download` / `install_script` events, sent with the visitor's IP and user agent so Rybbit can tell country, device and unique visitors. |
 | | `PORT` / `HOST` | no | Listen address, default `0.0.0.0:7431`. |
 | Daemon at runtime | `GITNUT_HOME` | no | Config folder, default `~/.gitnut`. |
-
 | | `GITNUT_MANIFEST_URL` | no | Overrides the baked-in update manifest, in the daemon's own environment (self-hosted mirror, tests). Not a setting on purpose: whoever picks the manifest picks the binary the daemon installs. |
 | | `GITNUT_MANAGED_BY` | set by the app | `desktop` when the desktop app started the daemon: it then never updates itself. |
 | | `GITNUT_SERVICE` | set by the service | Marks a daemon run by systemd / launchd, so a self-update restarts through the service. |
+
+Build machines also need `gh` logged in (`gh auth login`); `bun run setup` checks all of the above.
+On Coolify, `GITNUT_SITE_URL`, `GITNUT_RYBBIT_URL` and `GITNUT_RYBBIT_SITE_ID` are used at build time
+too (the Dockerfile takes them as build args for the static pages); keep `GITNUT_RYBBIT_API_KEY`
+runtime only.
 
 Dev and tests only: `GITNUT_DEV_HOST`, `GITNUT_DEV_DAEMON`, `GITNUT_DEV_HOME`, `GITNUT_WEB_DIR`,
 `GITNUT_FIXTURES`, `GITNUT_EXEC_PATH` (binary an update replaces, for tests), `GITNUT_SERVICE_DIR` /

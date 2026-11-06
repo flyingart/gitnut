@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
-import { dropConnection, normalizeUrl, type ServerConfig } from "./connection";
+import { dropConnection, fetchHealth, parseServerAddress, type ServerConfig } from "./connection";
+import { confirmAction } from "./overlays";
 import { useConnectionState, useServers, type ServerEntry } from "./provider";
 import { GitnutRoot, useCx, type StyleProps } from "./root";
 import { AddServerDialog } from "./AddServerDialog";
@@ -45,10 +46,7 @@ function useNeedsToken(entry: ServerEntry, state: string): boolean {
   useEffect(() => {
     if (state === "open" || entry.sameOrigin || entry.conn.token) return setNeeds(false);
     let live = true;
-    fetch(`${entry.conn.url}/api/health`)
-      .then((r) => r.json())
-      .then((h: { originAllowed?: boolean; authRequired?: boolean }) => live && setNeeds(h.originAllowed === false || !!h.authRequired))
-      .catch(() => {});
+    void fetchHealth(entry.conn.url).then((h) => live && setNeeds(!!h && (!h.originAllowed || h.authRequired)));
     return () => {
       live = false;
     };
@@ -62,14 +60,20 @@ function ServerRow({ entry }: { entry: ServerEntry }) {
   const { state, info } = useConnectionState(entry.conn);
   const [edit, setEdit] = useState<ServerConfig | null>(null);
   const needsToken = useNeedsToken(entry, state);
-  const remove = () => {
-    if (!confirm(`Remove ${entry.conn.name} (${entry.conn.url}) from this client? The daemon keeps running.`)) return;
+  const remove = async () => {
+    const ok = await confirmAction({ title: `Remove ${entry.conn.name}?`, message: `${entry.conn.url} is removed from this client. The daemon keeps running.`, confirmLabel: "Remove", danger: true });
+    if (!ok) return;
     removeServer(entry.conn.url);
     dropConnection(entry.conn.url);
   };
   const save = () => {
     if (!edit) return;
-    const url = normalizeUrl(/^https?:\/\//.test(edit.url.trim()) ? edit.url.trim() : `http://${edit.url.trim()}`);
+    let url: string;
+    try {
+      url = parseServerAddress(edit.url);
+    } catch {
+      return;
+    }
     const next = { url, name: edit.name?.trim() || undefined, token: edit.token?.trim() || undefined };
     if (url !== entry.conn.url) {
       removeServer(entry.conn.url);
@@ -114,7 +118,7 @@ function ServerRow({ entry }: { entry: ServerEntry }) {
       ) : (
         <>
           <IconButton title={`Edit ${entry.conn.name}`} icon={<Pencil size={13} />} onClick={() => setEdit({ url: entry.conn.url, name: entry.config.name, token: entry.conn.token })} />
-          <IconButton title={`Remove ${entry.conn.name}`} icon={<Trash2 size={13} />} onClick={remove} />
+          <IconButton title={`Remove ${entry.conn.name}`} icon={<Trash2 size={13} />} onClick={() => void remove()} />
         </>
       )}
     </div>

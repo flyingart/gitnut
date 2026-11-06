@@ -7,6 +7,7 @@ import { GitnutRoot, useCx, type StyleProps } from "./root";
 import { UpdateButton } from "./UpdateButton";
 import { Button, copyText, Empty, Spinner } from "./ui";
 import { Checkbox, Field, FieldRow, Section } from "./form";
+import { confirmAction } from "./overlays";
 
 /** Props of {@link SettingsPanel}. */
 export interface SettingsPanelProps extends StyleProps {
@@ -32,7 +33,7 @@ function diff(s: PublicSettings, d: Draft): SettingsPatch {
   if (Number(d.scanDepth) !== s.scanDepth) p.scanDepth = Number(d.scanDepth);
   if (Number(d.pollIntervalMs) !== s.pollIntervalMs) p.pollIntervalMs = Number(d.pollIntervalMs);
   if (s.autoFetchMinutes !== undefined && Number(d.autoFetchMinutes) !== s.autoFetchMinutes) p.autoFetchMinutes = Number(d.autoFetchMinutes);
-  if (d.update.manifestUrl !== s.update.manifestUrl || d.update.autoCheck !== s.update.autoCheck) p.update = { ...d.update };
+  if (d.update.autoCheck !== s.update.autoCheck) p.update = { ...d.update };
   return p;
 }
 
@@ -84,7 +85,9 @@ export function SettingsPanel(props: SettingsPanelProps) {
   };
 
   const rotate = async () => {
-    if (!conn || !confirm("Rotate the access token? Every other client and browser has to log in again with the new token.")) return;
+    if (!conn) return;
+    const ok = await confirmAction({ title: "Rotate the access token?", message: "Every other client and browser has to log in again with the new token.", confirmLabel: "Rotate token", danger: true });
+    if (!ok) return;
     setBusy(true);
     try {
       const r = await update({ auth: { rotateToken: true } });
@@ -105,7 +108,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
     </Field>
   );
   const input = (k: "name" | "port" | "scanDepth" | "pollIntervalMs" | "autoFetchMinutes", type = "text", placeholder?: string) => (
-    <input className={cx("input", "gitnut-input")} type={type} value={String(draft[k])} placeholder={placeholder} onChange={(e) => set(k, (type === "number" ? e.target.value : e.target.value) as never)} />
+    <input className={cx("input", "gitnut-input")} type={type} value={String(draft[k])} placeholder={placeholder} onChange={(e) => set(k, e.target.value as never)} />
   );
   const list = (k: "roots" | "repos" | "exclude" | "allowedOrigins", placeholder: string) => (
     <textarea className={cx("input", "gitnut-input", "gitnut-list-input")} rows={Math.max(2, Math.min(6, draft[k].split("\n").length + 1))} value={draft[k]} placeholder={placeholder} onChange={(e) => set(k, e.target.value)} spellCheck={false} />

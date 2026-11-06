@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { normalizeUrl, type ServerConfig } from "./connection";
+import { fetchHealth, parseServerAddress, type ServerConfig } from "./connection";
 import { useServers } from "./provider";
 import { Dialog, Button } from "./ui";
 import { useCx } from "./root";
@@ -25,21 +25,23 @@ export function AddServerDialog({ onClose, onAdd }: AddServerDialogProps) {
   const [error, setError] = useState<string | null>(null);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    let u = url.trim();
-    if (!/^https?:\/\//.test(u)) u = `http://${u}`;
-    if (!/:\d+$/.test(new URL(u).host) && !u.startsWith("https")) u = `${normalizeUrl(u)}:7420`;
+    let u: string;
+    try {
+      u = parseServerAddress(url);
+    } catch {
+      return setError(`Not an address: ${url}`);
+    }
     setBusy(true);
     setError(null);
     try {
-      const r = await fetch(normalizeUrl(u) + "/api/health");
-      const h = (await r.json()) as { ok?: boolean; authRequired?: boolean; originAllowed?: boolean; name?: string };
-      if (!h.ok) throw new Error("not a gitnut daemon");
+      const h = await fetchHealth(u);
+      if (!h) throw new Error("no gitnut daemon answered");
       if (h.authRequired && !token.trim()) throw new Hint("This daemon needs its access token: run `gitnut token` on that machine and paste it here.");
       // auth off there: only its own page may connect without a token, other apps need the token
       if (h.originAllowed === false && !token.trim()) {
         throw new Hint("This daemon has the access token turned off, so only its own page can connect without it. Run `gitnut token` on that machine and paste the token here (better: also turn auth on there with `gitnut config set auth.enabled true`).");
       }
-      const server = { url: normalizeUrl(u), token: token.trim() || undefined };
+      const server = { url: u, token: token.trim() || undefined };
       (onAdd ?? addServer)(server);
       onClose();
     } catch (err) {

@@ -1,5 +1,5 @@
 import { CloudDownload } from "lucide-react";
-import { useUpdate } from "./hooks";
+import { UPDATES_WITH_APP, useUpdate } from "./hooks";
 import type { ServerProp } from "./provider";
 import { GitnutRoot, type StyleProps } from "./root";
 import { Button } from "./ui";
@@ -45,7 +45,7 @@ export function UpdateButton(props: UpdateButtonProps) {
       )}
       {(message || info) && (
         <span className={phase === "error" ? "gitnut-error-text" : "gitnut-muted"} role="status">
-          {message ?? (info?.error ? info.error : info?.managedBy ? "Updates come with the GitNut desktop app" : `${viaApp ? "GitNut app" : "gitnut"} ${info?.current}`)}
+          {message ?? (info?.error ? info.error : info?.managedBy ? UPDATES_WITH_APP : `${viaApp ? "GitNut app" : "gitnut"} ${info?.current}`)}
         </span>
       )}
     </GitnutRoot>

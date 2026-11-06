@@ -1,7 +1,9 @@
 import {
   BASE_PROTOCOL,
   BEARER_PROTOCOL_PREFIX,
+  DEFAULT_PORT,
   type ErrorCode,
+  type HealthResponse,
   type EventName,
   type Events,
   type Method,
@@ -54,6 +56,31 @@ interface Pending {
 type FetchFn = (url: string, init?: RequestInit) => Promise<Response>;
 
 export const normalizeUrl = (url: string) => url.trim().replace(/\/+$/, "");
+
+/** What the user typed ("my-box", "my-box:7420", "https://host") as a daemon URL: http:// and port 7420 by default. */
+export function parseServerAddress(input: string): string {
+  let u = input.trim();
+  if (!/^https?:\/\//i.test(u)) u = `http://${u}`;
+  const url = new URL(u);
+  if (!url.port && url.protocol === "http:") url.port = String(DEFAULT_PORT);
+  return normalizeUrl(url.origin + url.pathname);
+}
+
+/** Why a reachable daemon with auth off still refuses a page that isn't its own (see HealthResponse.originAllowed). */
+export const NEEDS_TOKEN = "This daemon needs its access token: run `gitnut token` on that machine and paste it into the server settings.";
+
+/** True when this page is served by the daemon at `url` (same origin). */
+export const servesThisPage = (url: string) => typeof location !== "undefined" && normalizeUrl(location.origin) === normalizeUrl(url);
+
+/** `GET /api/health` of a daemon, or null when it can't be reached or isn't a gitnut daemon. */
+export async function fetchHealth(url: string, fetchFn: FetchFn = (u, i) => globalThis.fetch(u, i)): Promise<HealthResponse | null> {
+  try {
+    const h = (await (await fetchFn(`${normalizeUrl(url)}/api/health`)).json()) as HealthResponse;
+    return h?.ok ? h : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * One WebSocket to one daemon: typed calls, events, auto-reconnect with backoff,
@@ -112,7 +139,7 @@ export class GitnutConnection {
 
   /** Same-origin connections rely on the HttpOnly login cookie instead of a token. */
   get usesCookie(): boolean {
-    return !this.token && typeof location !== "undefined" && normalizeUrl(location.origin) === this.url;
+    return !this.token && servesThisPage(this.url);
   }
 
   /** Name given by the user (ServerConfig.name); wins over the daemon's name. */
@@ -174,14 +201,9 @@ export class GitnutConnection {
 
   /** The handshake was refused: offline, or auth required? */
   private async probe() {
-    try {
-      const r = await this.fetchFn(this.url + "/api/health");
-      const h = (await r.json()) as { authRequired?: boolean };
-      if (h.authRequired) return this.setUnauthorized(this.everOpened ? "Your session ended. Log in again." : null);
-      this.error = "The daemon refused the connection (origin not allowed?)";
-    } catch {
-      this.error = "Can't reach the daemon";
-    }
+    const h = await fetchHealth(this.url, this.fetchFn);
+    if (h?.authRequired) return this.setUnauthorized(this.everOpened ? "Your session ended. Log in again." : null);
+    this.error = !h ? "Can't reach the daemon" : h.originAllowed ? "The daemon refused the connection" : NEEDS_TOKEN;
     this.scheduleRetry();
   }
 
@@ -238,7 +260,7 @@ export class GitnutConnection {
   }
 
   private sameOrigin() {
-    return typeof location !== "undefined" && normalizeUrl(location.origin) === this.url;
+    return servesThisPage(this.url);
   }
 
   close() {

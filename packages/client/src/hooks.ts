@@ -17,7 +17,7 @@ import {
   type UpdateInfo,
   type WorktreeSummary,
 } from "@gitnut/commons";
-import { GitnutRpcError, normalizeUrl, type GitnutConnection } from "./connection";
+import { GitnutRpcError, servesThisPage, type GitnutConnection } from "./connection";
 import { useConnection, useConnectionState, type ServerProp } from "./provider";
 import type { Query, QueryState } from "./query";
 import { desktopApp } from "./desktop";
@@ -37,7 +37,7 @@ export function useQuery<T>(conn: GitnutConnection | null, key: string | null, f
 export function useRepos(server?: ServerProp) {
   const conn = useConnection(server);
   const st = useConnectionState(conn);
-  const q = useQuery(conn, st.state === "unauthorized" ? null : "repos", () => conn!.call("repos.list"), "repos");
+  const q = useQuery(conn, st.state === "unauthorized" ? null : "repos", () => conn!.call("repos.list"), REPOS_TOPIC);
   return { repos: q.data ?? [], loading: q.data === undefined && st.state !== "offline", error: q.error, conn, state: st.state };
 }
 
@@ -265,7 +265,12 @@ export function useSettings(server?: ServerProp) {
 
 export type UpdatePhase = "idle" | "checking" | "applying" | "restarting" | "done" | "error";
 
-/** Update state of a daemon: check, apply, and follow the restart. */
+/** Shown for a daemon that came with the desktop app (UpdateInfo.managedBy). */
+/** Live topic of the repo list (shared by useRepos and useReposOf, so both use one cached query). */
+const REPOS_TOPIC = "repos";
+
+export const UPDATES_WITH_APP = "Updates come with the GitNut desktop app";
+
 /**
  * Update state and actions for one server, the single update path of the UI (update icon, Settings).
  * Inside the desktop app its own daemon updates with the app (Tauri updater: app + daemon in one
@@ -273,7 +278,7 @@ export type UpdatePhase = "idle" | "checking" | "applying" | "restarting" | "don
  */
 export function useUpdate(server?: ServerProp) {
   const conn = useConnection(server);
-  const viaApp = !!desktopApp && !!conn && typeof location !== "undefined" && conn.url === normalizeUrl(location.origin);
+  const viaApp = !!desktopApp && !!conn && servesThisPage(conn.url);
   const daemon = useDaemonUpdate(viaApp ? null : conn);
   const app = useAppUpdate(viaApp);
   return { ...(viaApp ? app : daemon), conn, viaApp };
@@ -344,7 +349,7 @@ function useDaemonUpdate(conn: GitnutConnection | null) {
       const info = await conn.call("update.check");
       conn.query("update", () => conn.call("update.check")).set(info);
       setPhase("idle");
-      setMessage(info.error ?? (info.managedBy ? "Updates come with the GitNut desktop app" : info.available ? null : "You're on the latest version"));
+      setMessage(info.error ?? (info.managedBy ? UPDATES_WITH_APP : info.available ? null : "You're on the latest version"));
     } catch (e) {
       setPhase("error");
       setMessage((e as Error).message);
@@ -396,6 +401,6 @@ export function useQueries<T>(qs: Query<T>[]): QueryState<T>[] {
 
 /** Repos of several connections (one shared `repos` query each). */
 export function useReposOf(conns: GitnutConnection[]) {
-  const qs = useMemo(() => conns.map((c) => c.query("repos", () => c.call("repos.list"), "repos")), [conns]);
+  const qs = useMemo(() => conns.map((c) => c.query("repos", () => c.call("repos.list"), REPOS_TOPIC)), [conns]);
   return useQueries(qs);
 }

@@ -24,10 +24,12 @@
     "release": "bun run scripts/release.ts",
     "screenshots": "bun run scripts/screenshots.ts",
     "lint": "biome lint .",
-    "check": "bun run typecheck && bun run lint && bun test"
+    "check": "bun run typecheck && bun run lint && bun test",
+    "setup": "bun run scripts/setup.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.6",
+    "@clack/prompts": "^1.8.1",
     "@gitnut/commons": "workspace:*",
     "@happy-dom/global-registrator": "^21.0.4",
     "@playwright/test": "^1.65.0",

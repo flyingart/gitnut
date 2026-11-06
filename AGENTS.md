@@ -87,8 +87,11 @@ daemon build. `main` is protected: work on a branch, open a PR, wait for green C
   from: `<site>/manifest.json` lists the download URLs. `--dev` builds have updates off.
 - Desktop builds sign their updater files with `TAURI_SIGNING_PRIVATE_KEY` (in `.env`). The public
   key in `tauri.conf.json` must never change, or installed apps stop accepting updates.
-- `bun run release <version> [--publish --notes notes.md]` sets the version everywhere, builds the
-  binaries and checksums, and publishes the GitHub release `v<version>`.
+- Releases: `bun run setup` once per build machine, then `bun run release` (start: version PR +
+  draft release; build: on each machine, uploads to the draft; publish: checksums + notes). People
+  run it without any AI help, so keep it interactive, with clear errors and hints.
+- Nothing in the repo may depend on one person's machine: no absolute paths, host names, IPs or
+  user names. Machine settings go to `.env` (see `.env.example`).
 - macOS builds sign and notarize with the Developer ID certificate in the Keychain
   (`scripts/mac-signing.ts`). Never put certificates, passwords or tokens into the repo.
 - Versions follow semver. The daemon updates itself from the manifest. The web client is served by

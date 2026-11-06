@@ -87,7 +87,7 @@ component) connects to many daemons and shows all their projects.
   `serveWeb: false` turns it off.
 - **R-DAEMON-4** Bind modes: `localhost`, `tailscale` (the machine's Tailscale IP), `all`,
   or an explicit IP.
-- **R-DAEMON-5** Auth like Jean: token only. Turn on/off; off by default (default bind is
+- **R-DAEMON-5** Auth: token only. Turn on/off; off by default (default bind is
   127.0.0.1), the CLI warns when auth is off on a non-localhost bind. Token via cookie (web login with
   `?token=` link or token form), WebSocket subprotocol `gitnut.bearer.<token>` (SDK), or
   `Authorization: Bearer`. Constant-time compare. Rotating the token disconnects old sessions.
@@ -121,7 +121,7 @@ component) connects to many daemons and shows all their projects.
 - **R-UPD-4** Install with one command: `curl -fsSL <site>/install.sh | sh` (Linux/macOS) and
   `irm <site>/install.ps1 | iex` (Windows).
 - **R-UPD-5** Desktop apps (macOS, Windows, Linux) built with Tauri v2. Starting the app starts
-  the daemon (like Jean); the app shows the web client served by that daemon. The desktop app
+  the daemon; the app shows the web client served by that daemon. The desktop app
   keeps its daemon in the user data folder so web-client updates update it too. The app updates
   itself with the Tauri updater: `<site>/desktop/latest.json` (from the GitHub release), checked
   every 10 minutes, signed with our updater key, "Install and restart" / "Later".

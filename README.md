@@ -197,7 +197,7 @@ restart the listener). The same settings are editable in the client (gear icon).
 | `update.autoCheck` | `true` | Check at start and every 6 h, show the update button |
 
 Worktrees are grouped under their main repository (same git common dir), including worktrees
-outside the roots (for example `~/jean/<repo>/<name>` or T3 Code worktrees).
+outside the roots (for example worktrees that agent tools keep in their own folders).
 
 ## Security
 
@@ -208,7 +208,7 @@ access to it like shell access.
   still held back by the Origin check below, but any local process or other local user can use
   the port. Turn auth on (`gitnut config set auth.enabled true`) on shared machines and before
   binding to `tailscale`, `all` or an IP; the CLI warns when auth is off on such a bind.
-- **Auth is token only** (like Jean). The token (32 random bytes) is in `config.json` (mode
+- **Auth is token only.** The token (32 random bytes) is in `config.json` (mode
   0600) from the first start, ready for when auth is turned on. Browsers log in with the token form or a `/?token=…` link and get an HttpOnly,
   SameSite=Strict cookie. SDK clients pass it as WebSocket subprotocol `gitnut.bearer.<token>`.
   Comparisons are constant-time. `gitnut token --rotate` disconnects every session that used
@@ -295,7 +295,7 @@ token is passed in the URL hash. Live examples: `/examples.html` on any daemon.
 
 ## Updates
 
-1. `bun run release <version> --publish --notes notes.md` creates the GitHub release; the website
+1. `bun run release` (start, build on each machine, publish) creates the GitHub release; the website
    reads GitHub releases, so its `/manifest.json` offers the new version within 10 minutes.
 2. Daemons check `<GITNUT_SITE_URL>/manifest.json` (baked in at build time; `gitnut config set
    update.manifestUrl` overrides it for testing). An update icon shows next to the logo.
@@ -326,16 +326,13 @@ bun run dev          # daemon (watch) + web (Vite, :5174) + site (:7431), prints
 Details (all env vars, Coolify setup for the site): [docs/BUILD.md](docs/BUILD.md).
 
 ```sh
-# .env on every build machine (gitignored):
-#   GITNUT_SITE_URL=https://gitnut.dev            where shipped binaries look for updates
-#   TAURI_SIGNING_PRIVATE_KEY=~/.tauri/gitnut.key desktop updater key (desktop builds)
-bun run scripts/build-daemon.ts --targets all --build-web     # -> dist/bin/gitnut-<platform>
-bun run release 0.3.0                                         # -> release/0.3.0/ (+ Linux desktop)
-bun run release 0.3.0 --skip-desktop --publish --notes notes.md   # GitHub release v0.3.0
+bun run setup      # once per build machine: tools, gh login, .env (see .env.example), updater key
+bun run release    # interactive: start a release, build on this machine, publish
+bun run scripts/build-daemon.ts --targets all --build-web --dev   # just the CLI binaries, no updates
 ```
 
-Targets: `linux-x64`, `linux-arm64`, `darwin-arm64`, `darwin-x64`, `windows-x64`. The release
-script lists the desktop files that are still missing (built on the Mac, then copied in).
+Targets: `linux-x64`, `linux-arm64`, `darwin-arm64`, `darwin-x64`, `windows-x64`. Each build machine
+uploads its files to the draft GitHub release; publishing lists anything still missing.
 
 Website (`packages/site`, Docker): one required env var, `GITNUT_GITHUB_REPO`; everything else
 (versions, downloads, checksums, changelog, desktop updates) comes from the GitHub releases.
@@ -391,9 +388,8 @@ bun run build:desktop --version 0.2.0
 Unsigned, so SmartScreen warns: More info → Run anyway. WebView2 is preinstalled on
 Windows 10/11.
 
-Copy the installers (and their updater files and `.sig`s) into the same `release/<version>/`
-folder before running `bun run release <version> --skip-desktop --publish`, so they get
-checksums and land in the GitHub release.
+For a release, use `bun run release` → *Build on this machine* instead: it builds the installers
+with their updater files and uploads them to the draft GitHub release.
 
 ## Tests
 

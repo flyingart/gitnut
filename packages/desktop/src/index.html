@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>GitNut</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; color: #ededf0; color-scheme: dark;
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Inter Variable", "Segoe UI", system-ui, sans-serif; }
+    body { display: grid; place-items: center; -webkit-user-select: none; user-select: none; }
+    main { text-align: center; max-width: 34rem; padding: 2rem; }
+    img { width: 72px; height: 72px; border-radius: 18px; box-shadow: 0 20px 70px -20px oklch(0.571 0.21 264); }
+    h1 { font-size: 1.1rem; font-weight: 600; margin: 1.2rem 0 0.3rem; letter-spacing: -0.01em; }
+    p { color: #9a9aa6; margin: 0; }
+    .spin { width: 16px; height: 16px; margin: 1.2rem auto 0; border-radius: 50%;
+      border: 2px solid rgb(255 255 255 / 12%); border-top-color: oklch(0.65 0.2 264); animation: s 0.8s linear infinite; }
+    @keyframes s { to { transform: rotate(360deg); } }
+    pre { display: none; text-align: left; white-space: pre-wrap; word-break: break-word; margin: 1.2rem 0 0; padding: 0.8rem 1rem;
+      background: color-mix(in srgb, #0c0c10 80%, transparent); border: 1px solid rgb(255 255 255 / 8%); border-radius: 0.5rem;
+      color: #f0a0a0; font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; -webkit-user-select: text; user-select: text; }
+    body.error .spin { display: none; }
+    body.error pre { display: block; }
+  </style>
+</head>
+<body>
+  <main>
+    <img src="logo.svg" alt="">
+    <h1 id="title">Starting gitnut</h1>
+    <p id="status">Looking for the local daemon…</p>
+    <div class="spin"></div>
+    <pre id="detail"></pre>
+  </main>
+  <script>
+    // Called from Rust through webview.eval (this page has no IPC).
+    window.gitnutStatus = (text) => { document.getElementById("status").textContent = text; };
+    window.gitnutError = (text, detail) => {
+      document.body.classList.add("error");
+      document.getElementById("title").textContent = "GitNut could not start its daemon";
+      document.getElementById("status").textContent = text;
+      document.getElementById("detail").textContent = detail;
+    };
+  </script>
+</body>
+</html>

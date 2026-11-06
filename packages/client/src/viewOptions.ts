@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import type { SortType } from "@gitnut/commons";
-import { readStored } from "./storage";
 
 export type CommitColumn = "author" | "date" | "hash";
 
@@ -65,7 +64,7 @@ const listeners = new Set<() => void>();
 
 function load(): ViewOptions {
   try {
-    const raw = typeof localStorage !== "undefined" ? readStored(storageKey) : null;
+    const raw = typeof localStorage !== "undefined" ? localStorage.getItem(storageKey) : null;
     return { ...DEFAULT_VIEW_OPTIONS, ...(raw ? JSON.parse(raw) : {}) };
   } catch {
     return { ...DEFAULT_VIEW_OPTIONS };

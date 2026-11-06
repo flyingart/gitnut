@@ -18,7 +18,7 @@ import { applyPatch, homeDir, loadConfig, saveConfig, type Config } from "./conf
 import { GitnutError, fail } from "./errors";
 import { GraphCache } from "./graph";
 import { Live, eventMessage } from "./live";
-import { authCookie, authorize, isHttps, tokenEquals } from "./auth";
+import { authCookie, authorize, isHttps, tokenEquals, originAllowed } from "./auth";
 import { localHost, resolveBind, urlHost } from "./net";
 import { RepoIndex } from "./repos";
 import { dispatch } from "./rpc";
@@ -277,7 +277,8 @@ export class Daemon {
     if (p === "/api/health") {
       const cors = { "access-control-allow-origin": "*", "access-control-allow-methods": "GET, OPTIONS" };
       if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-      return this.json({ ok: true, name: this.name, version: VERSION, protocol: PROTOCOL_VERSION, authRequired: s.auth.enabled }, 200, cors);
+      // originAllowed: whether this browser page may connect without a token (no-auth / cookie access)
+      return this.json({ ok: true, name: this.name, version: VERSION, protocol: PROTOCOL_VERSION, authRequired: s.auth.enabled, originAllowed: originAllowed(req, s.allowedOrigins) }, 200, cors);
     }
 
     if (p === "/ws") {

@@ -26,6 +26,13 @@ describe("auth", () => {
     expect(await res.json()).toMatchObject({ ok: true, protocol: 1, authRequired: true });
   });
 
+  test("R-DAEMON-5: health tells a page whether it may connect without a token", async () => {
+    const health = (origin?: string) => fetch(`${env.url}/api/health`, { headers: origin ? { origin } : {} }).then((r) => r.json());
+    expect((await health()).originAllowed).toBe(true); // not a browser
+    expect((await health(env.url)).originAllowed).toBe(true); // its own page
+    expect((await health("http://127.0.0.1:1")).originAllowed).toBe(false); // e.g. the desktop app of another machine
+  });
+
   test("R-DAEMON-5: no token and wrong token are rejected", async () => {
     expect((await fetch(`${env.url}/ws`, { headers: { upgrade: "websocket" } })).status).toBe(401);
     expect(await fails(env.wsUrl)).not.toBe("connected");

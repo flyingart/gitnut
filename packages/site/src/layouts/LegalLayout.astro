@@ -1,0 +1,17 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+
+// Layout of the Markdown legal pages (privacy.md, terms.md): frontmatter title, description, lede.
+const { frontmatter } = Astro.props;
+---
+<BaseLayout title={`${frontmatter.title} · GitNut`} description={frontmatter.description} path={frontmatter.path}>
+    <header class="cl-head">
+      <div class="eyebrow">Legal</div>
+      <h1>{frontmatter.title}</h1>
+      <p class="section-lede">{frontmatter.lede}</p>
+    </header>
+
+    <article class="legal glass">
+      <slot />
+    </article>
+</BaseLayout>

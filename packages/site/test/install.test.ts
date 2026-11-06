@@ -3,7 +3,8 @@ import { createHash } from "node:crypto";
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readlinkSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createSite } from "../src/server";
+import { createSite } from "../server/server";
+import "./dist";
 
 // Fake release host: every `gitnut-<platform>` is the same dummy shell script.
 const BINARY = '#!/bin/sh\necho "gitnut 9.9.9"\n';

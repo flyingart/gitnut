@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { createSite } from "../src/server";
+import { createSite } from "../server/server";
+import { DIST } from "./dist";
 
 const SUMS = `${"a".repeat(64)}  gitnut-linux-x64\n${"b".repeat(64)}  GitNut-1.4.0-darwin-arm64.dmg\n`;
 const FILES = [
@@ -172,13 +173,27 @@ describe("site", () => {
   });
 
   test("R-SITE-1: every HTML page loads the cookieless Rybbit script exactly once", async () => {
-    const pages = (await readdir(join(import.meta.dir, "..", "public"))).filter((f) => f.endsWith(".html"));
+    const pages = (await readdir(DIST)).filter((f) => f.endsWith(".html"));
     expect(pages).toEqual(expect.arrayContaining(["index.html", "changelog.html", "privacy.html", "terms.html"]));
     for (const page of pages) {
-      const html = await Bun.file(join(import.meta.dir, "..", "public", page)).text();
+      const html = await Bun.file(join(DIST, page)).text();
       const head = html.slice(0, html.indexOf("</head>"));
       expect({ page, count: html.split("https://pulse.flyingart.dev/api/script.js?siteId=2f92cca69f3e").length - 1 }).toEqual({ page, count: 1 });
       expect(head).toContain('<script src="https://pulse.flyingart.dev/api/script.js?siteId=2f92cca69f3e" defer></script>');
+    }
+  });
+
+  test("R-SITE-1: every page comes from the shared layout: one Rybbit script, one canonical, the footer links", async () => {
+    const s = site();
+    for (const path of ["/", "/changelog", "/privacy", "/terms"]) {
+      const html = await (await s.get(path)).text();
+      const count = (needle: string) => html.split(needle).length - 1;
+      expect({ path, rybbit: count('src="https://pulse.flyingart.dev/api/script.js'), canonical: count('rel="canonical"'), footer: count('<footer class="site-footer">') })
+        .toEqual({ path, rybbit: 1, canonical: 1, footer: 1 });
+      expect(html).toContain(`<link rel="canonical" href="https://gitnut.dev${path}">`);
+      const footer = html.slice(html.indexOf('<footer class="site-footer">'));
+      for (const href of ["/#download", "/changelog", "/manifest.json", "/#support", "https://github.com/flyingart/gitnut/issues", "https://github.com/flyingart/gitnut#readme", "https://github.com/flyingart/gitnut/releases", "/privacy", "/terms"])
+        expect(footer).toContain(`href="${href}"`);
     }
   });
 
@@ -196,8 +211,8 @@ describe("site", () => {
     expect((await s.get("/logo.svg")).status).toBe(200);
     expect(await (await s.get("/healthz")).text()).toBe("ok");
     expect(Array.isArray(await (await s.get("/screenshots.json")).json())).toBe(true);
-    expect((await s.get("/../src/server.ts")).status).toBe(404);
-    expect((await s.get("/%2e%2e/src/server.ts")).status).toBe(404);
+    expect((await s.get("/../server/server.ts")).status).toBe(404);
+    expect((await s.get("/%2e%2e/server/server.ts")).status).toBe(404);
   });
 
   test("R-SITE-1: /changelog serves the page; changelog.json comes from the releases", async () => {

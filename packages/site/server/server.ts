@@ -4,10 +4,11 @@ import { join, normalize } from "node:path";
 import { DESKTOP_ASSETS, SHA256SUMS, assetFile, assetUrl, buildManifest, parseSha256Sums, type UpdateManifest } from "@gitnut/commons";
 import { assetResponse, fetchReleases, type Release } from "./github";
 
-const PUBLIC = join(import.meta.dir, "..", "public");
+// The Astro build (`bun run build`): pages plus everything from public/.
+const DIST = join(import.meta.dir, "..", "dist");
 // The README screenshots (docs/screenshots) double as the site gallery; the Docker image copies them
-// into public/screenshots.
-const SHOTS = existsSync(join(PUBLIC, "screenshots")) ? join(PUBLIC, "screenshots") : join(import.meta.dir, "..", "..", "..", "docs", "screenshots");
+// into dist/screenshots.
+const SHOTS = existsSync(join(DIST, "screenshots")) ? join(DIST, "screenshots") : join(import.meta.dir, "..", "..", "..", "docs", "screenshots");
 const PAGES: Record<string, string> = {
   "/": "/index.html",
   "/changelog": "/changelog.html",
@@ -89,7 +90,7 @@ export function createSite(env: Record<string, string | undefined> = process.env
   async function installScript(name: string, req: Request): Promise<Response> {
     const latest = releases[0];
     if (!latest) return noRelease();
-    const text = (await Bun.file(join(PUBLIC, name)).text())
+    const text = (await Bun.file(join(DIST, name)).text())
       .replaceAll("__GITNUT_SITE_URL__", siteUrl(req))
       .replaceAll("__GITNUT_DOWNLOAD_BASE__", `${siteUrl(req)}/releases`)
       .replaceAll("__GITNUT_VERSION__", latest.version);
@@ -150,7 +151,7 @@ export function createSite(env: Record<string, string | undefined> = process.env
 
     // Search engines get the canonical origin, never a forwarded host.
     if (pathname === "/robots.txt") {
-      const text = (await Bun.file(join(PUBLIC, "robots.txt")).text()).replaceAll("https://gitnut.dev", canonical);
+      const text = (await Bun.file(join(DIST, "robots.txt")).text()).replaceAll("https://gitnut.dev", canonical);
       return new Response(text, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=3600" } });
     }
     if (pathname === "/sitemap.xml") {
@@ -168,7 +169,7 @@ export function createSite(env: Record<string, string | undefined> = process.env
     // Static files (landing page, logo, detect.js, screenshots).
     const rel = normalize(PAGES[pathname] ?? decodeURIComponent(pathname));
     if (rel.includes("..") || rel.includes("\0")) return new Response("not found", { status: 404 });
-    const file = Bun.file(rel.startsWith("/screenshots/") ? join(SHOTS, rel.slice("/screenshots/".length)) : join(PUBLIC, rel));
+    const file = Bun.file(rel.startsWith("/screenshots/") ? join(SHOTS, rel.slice("/screenshots/".length)) : join(DIST, rel));
     if (!(await file.exists())) return new Response("not found", { status: 404 });
     // Page code revalidates every load so a new site version shows at once; images may be cached.
     const fresh = /\.(html|js|css|svg)$/.test(rel);

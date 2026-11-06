@@ -77,7 +77,10 @@ bun test packages/site packages/commons/test/assets.test.ts
 ```
 
 `scripts/dev.ts` prints the URLs (host from `GITNUT_DEV_HOST`, default `localhost`; put it in a
-gitignored `.env` when you open the dev servers through a Tailscale name, Vite allows that host too). The site runs on port 7431 (`SITE_PORT`).
+gitignored `.env` when you open the dev servers through a Tailscale name, Vite allows that host too). The site runs on port 7431 (`SITE_PORT`):
+`astro dev` with live reload, proxying the dynamic routes (`/manifest.json`, `/changelog.json`, `/screenshots`, ...) to
+the Bun server on 127.0.0.1:7432 (`SITE_API_PORT`). `bun run dev` builds the site once first, because the Bun server reads
+`install.sh`, `install.ps1` and `robots.txt` from `dist/`.
 
 ## Daemon binaries
 
@@ -120,7 +123,18 @@ Non-interactive: `bun run release start 0.3.0 --yes`, `bun run release build --y
 
 ## Website (Coolify)
 
-Docker image from `packages/site/Dockerfile`, **build context = repository root**:
+Astro site (static output) plus a small Bun server:
+
+- `src/pages/` holds the pages: `index.astro`, `changelog.astro`, and `privacy.md`, `terms.md` (Markdown with `LegalLayout`).
+- `src/layouts/BaseLayout.astro` holds the shared `<head>` (meta, Open Graph, Twitter, Rybbit), the header and the footer.
+  `src/components/` holds the repeated parts.
+- `public/` holds `style.css`, `app.js`, `fx.js`, `detect.js`, images, `install.sh` and `install.ps1`. They are copied unchanged.
+- `bun run --cwd packages/site build` writes `dist/`.
+- `server/server.ts` serves `dist/` (clean URLs `/changelog`, `/privacy`, `/terms`) plus the dynamic routes below.
+- Page tests build `dist/` first.
+
+Docker image from `packages/site/Dockerfile`, **build context = repository root**. It builds the site, bundles the
+server, and the runtime image holds only `server/server.js` and `dist/`:
 
 ```sh
 docker build -f packages/site/Dockerfile -t gitnut-site .

@@ -1,0 +1,46 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+<BaseLayout
+  title="Changelog · GitNut, the git client for AI coding agents"
+  description="What's new in GitNut, the git client for monitoring Claude Code, Codex and Cursor agents: releases, new features and fixes."
+  path="/changelog"
+  ogTitle="GitNut changelog"
+  ogDescription="What's new in GitNut, the git client for monitoring AI coding agents."
+>
+  <script type="module" src="/fx.js" slot="scripts" is:inline></script>
+  <script type="module" slot="scripts" is:inline>
+    import { reveal } from "/fx.js";
+    // Rendered from changelog.json (newest first): one card per release, items grouped by type.
+    const KINDS = { new: "New", improved: "Improved", fixed: "Fixed" };
+    const list = document.getElementById("releases");
+    const el = (tag, props = {}, ...kids) => {
+      const n = Object.assign(document.createElement(tag), props);
+      n.append(...kids);
+      return n;
+    };
+    fetch("/changelog.json")
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((releases) => {
+        list.replaceChildren(...releases.map((rel, i) => {
+          const date = new Date(`${rel.date}T12:00:00Z`).toLocaleDateString(undefined, { dateStyle: "long" });
+          const meta = el("div", { className: "release-meta" },
+            el("span", { className: "ver" }, `v${rel.version}`),
+            el("time", { dateTime: rel.date }, date, ...(i === 0 ? [el("span", { className: "latest" }, "Latest")] : [])));
+          const groups = Object.entries(KINDS)
+            .map(([k, label]) => [k, label, rel.items.filter((it) => it.type === k)])
+            .filter(([, , items]) => items.length)
+            .map(([k, label, items]) => el("section", { className: `k-${k}` }, el("h3", {}, label), el("ul", {}, ...items.map((it) => el("li", {}, it.text)))));
+          return el("li", { className: "release", id: `v${rel.version}` }, meta, el("article", { className: "release-body glass" }, el("h2", {}, rel.title), ...groups));
+        }));
+        reveal(list.children);
+      })
+      .catch(() => list.replaceChildren(el("li", { className: "release-empty" }, "Could not load the changelog.")));
+  </script>
+    <header class="cl-head">
+      <div class="eyebrow">Changelog</div>
+      <h1>What's new in GitNut</h1>
+      <p class="section-lede">Every release, newest first. The desktop app and the CLI update themselves; <a class="grad-text" href="/#download">download the latest</a> to start fresh.</p>
+    </header>
+    <ol class="releases" id="releases" aria-live="polite"></ol>
+</BaseLayout>

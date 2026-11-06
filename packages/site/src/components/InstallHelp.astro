@@ -1,0 +1,55 @@
+---
+import Cmd from "./Cmd.astro";
+
+// WAI-ARIA tabs, one per OS; app.js switches them and preselects the detected OS.
+const TABS = [
+  { os: "darwin", icon: "apple", label: "macOS" },
+  { os: "windows", icon: "windows", label: "Windows" },
+  { os: "linux", icon: "linux", label: "Linux" },
+];
+---
+<div class="install-help glass" id="install-help">
+        <div class="ih-head">
+          <div>
+            <h3>Installing the unsigned builds</h3>
+            <p>GitNut is not code-signed yet, so your OS warns on first launch. Allow it once as shown below. Every file has a SHA-256 checksum, and the source is on GitHub.</p>
+          </div>
+          <div class="ih-tabs" role="tablist" aria-label="Operating system">
+            {TABS.map((t, i) => <button type="button" role="tab" id={`ih-tab-${t.os}`} aria-controls={`ih-${t.os}`} aria-selected={String(i === 0)} tabindex={i === 0 ? undefined : "-1"}><svg><use href={`#i-${t.icon}`}/></svg>{t.label}</button>)}
+          </div>
+        </div>
+        <div class="ih-panel" role="tabpanel" id="ih-darwin" aria-labelledby="ih-tab-darwin">
+          <ol class="ih-steps">
+            <li>Open the <code>.dmg</code> and drag <b>GitNut.app</b> to Applications, then open it.</li>
+            <li>macOS says <q>“GitNut” Not Opened. Apple could not verify…</q> Click <b>Done</b>, not <i>Move to Trash</i>.</li>
+            <li>Allow it once, either way:
+              <div class="ih-or">
+                <div><span class="ih-label">System Settings</span>Privacy &amp; Security → scroll down → <b>Open Anyway</b> → confirm with your password.</div>
+                <div><span class="ih-label">Terminal</span>Remove the download quarantine flag:
+                  <Cmd>xattr -dr com.apple.quarantine /Applications/GitNut.app</Cmd>
+                </div>
+              </div>
+            </li>
+          </ol>
+          <p class="ih-note">Right-click → Open no longer skips this check on recent macOS versions.</p>
+        </div>
+        <div class="ih-panel" role="tabpanel" id="ih-windows" aria-labelledby="ih-tab-windows" hidden>
+          <ol class="ih-steps">
+            <li>Run <code>GitNut-…-setup.exe</code>.</li>
+            <li>SmartScreen shows <q>Windows protected your PC</q>. Click <b>More info</b>.</li>
+            <li>Click <b>Run anyway</b>.</li>
+          </ol>
+          <p class="ih-note">The installer installs for your user only, so it needs no admin rights.</p>
+        </div>
+        <div class="ih-panel" role="tabpanel" id="ih-linux" aria-labelledby="ih-tab-linux" hidden>
+          <div class="ih-or">
+            <div><span class="ih-label">AppImage</span>Make it executable, then run it:
+              <Cmd>chmod +x GitNut-*.AppImage &amp;&amp; ./GitNut-*.AppImage</Cmd>
+            </div>
+            <div><span class="ih-label">.deb</span>Install it with apt from the download folder:
+              <Cmd>sudo apt install ./GitNut-*.deb</Cmd>
+            </div>
+          </div>
+        </div>
+        <p class="ih-soon"><span class="dot"></span>Signed and notarized builds are coming.</p>
+      </div>

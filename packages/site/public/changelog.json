@@ -1,0 +1,17 @@
+[
+  {
+    "version": "0.1.0",
+    "date": "2026-11-06",
+    "title": "Hello, GitNut",
+    "items": [
+      { "type": "new", "text": "IntelliJ-style commit graph for every branch and remote, fast with 50k+ commits." },
+      { "type": "new", "text": "Select several commits to read their combined change, file by file." },
+      { "type": "new", "text": "IntelliJ-style diff viewer: side by side or unified, word highlights, connector bands, image diffs." },
+      { "type": "new", "text": "Live uncommitted changes of every worktree, and one combined view across repos and machines." },
+      { "type": "new", "text": "One daemon per machine, one client for all of them: web panel, desktop app or React components." },
+      { "type": "new", "text": "Git actions: fetch, pull, push, commit, checkout, branches, tags, cherry-pick, revert, reset, merge, rebase, stash." },
+      { "type": "new", "text": "Agent checkpoint commits (Jean, T3 Code) hidden by default." },
+      { "type": "new", "text": "Themes and accents, optional tabs, server list, self-update from the CLI or the client." }
+    ]
+  }
+]

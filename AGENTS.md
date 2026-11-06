@@ -22,7 +22,7 @@ Read this file before you change anything. `CLAUDE.md` only points here.
 | `packages/client` | React components (the SDK). Every piece works standalone. `GitnutApp` only composes them. |
 | `packages/web` | Vite app that renders `GitnutApp`; embedded into the daemon binary. |
 | `packages/desktop` | Tauri v2 shell that starts the daemon sidecar. |
-| `packages/site` | gitnut.dev: static HTML/CSS/JS plus a small Bun server (manifest, installers, GitHub releases). |
+| `packages/site` | gitnut.dev: Astro static pages (`src/`, one `BaseLayout`), plain CSS/JS in `public/`, plus a small Bun server (`server/`: serves `dist/`, manifest, installers, GitHub releases). |
 | `scripts/` | build-daemon, build-desktop (+ mac-signing), release, screenshots, dev. |
 
 ## Commands

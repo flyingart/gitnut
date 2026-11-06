@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { readdir } from "node:fs/promises";
+import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createSite } from "../server/server";
-import { DIST, RYBBIT_SCRIPT, RYBBIT_URL } from "./dist";
+import { DIST, KOFI_URL, RYBBIT_SCRIPT, RYBBIT_URL } from "./dist";
 
 const SUMS = `${"a".repeat(64)}  gitnut-linux-x64\n${"b".repeat(64)}  GitNut-1.4.0-darwin-arm64.dmg\n`;
 const FILES = [
@@ -182,6 +183,27 @@ describe("site", () => {
       expect(head).toContain(`<script src="${RYBBIT_SCRIPT}" defer></script>`);
     }
   });
+
+  test("R-SITE-5: Pricing says GitNut is free, with the Ko-fi button only when the build has GITNUT_KOFI_URL", async () => {
+    const html = await Bun.file(join(DIST, "index.html")).text();
+    expect(html).toContain('<section id="pricing">');
+    expect(html).toContain('<a href="/#pricing">Pricing</a>');
+    expect(html).toContain(`<a class="btn primary" id="kofi" href="${KOFI_URL}" target="_blank" rel="noopener">`);
+    // A build without it (forks, or the var not set) still shows the section, but no button and no Ko-fi.
+    const out = await mkdtemp(join(tmpdir(), "gitnut-site-"));
+    try {
+      const env = { ...process.env, GITNUT_KOFI_URL: "" };
+      const r = Bun.spawnSync(["bun", "--bun", "astro", "build", "--outDir", out], { cwd: join(import.meta.dir, ".."), stdout: "ignore", stderr: "pipe", env });
+      expect(r.exitCode).toBe(0);
+      const plain = await Bun.file(join(out, "index.html")).text();
+      expect(plain).toContain('<section id="pricing">');
+      expect(plain).toContain("free and open source");
+      expect(plain.toLowerCase()).not.toContain("ko-fi");
+      expect(plain).not.toContain('id="kofi"');
+    } finally {
+      await rm(out, { recursive: true, force: true });
+    }
+  }, 60_000);
 
   test("R-SITE-1: every page comes from the shared layout: one Rybbit script, one canonical, the footer links", async () => {
     const s = site();

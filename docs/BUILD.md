@@ -40,6 +40,7 @@ loads it for every script).
 | | `GITNUT_GITHUB_REFRESH_MINUTES` | no | How often releases are re-read (default 10). |
 | | `GITNUT_SPONSOR_GITHUB` / `_KOFI` / `_PAYPAL` | no | Donation links shown in the Support section. |
 | | `GITNUT_RYBBIT_URL` / `GITNUT_RYBBIT_SITE_ID` | no | Self-hosted Rybbit analytics (build time and runtime): the page script, and the site the server's download events go to. Unset: no analytics. |
+| | `GITNUT_KOFI_URL` | no | Ko-fi page (https) for the donate button in the Pricing section (build time only). Unset: no button. |
 | | `GITNUT_RYBBIT_API_KEY` | no | Rybbit API key (runtime only) for server-side `file_download` / `install_script` events, sent with the visitor's IP and user agent so Rybbit can tell country, device and unique visitors. |
 | | `PORT` / `HOST` | no | Listen address, default `0.0.0.0:7431`. |
 | Daemon at runtime | `GITNUT_HOME` | no | Config folder, default `~/.gitnut`. |
@@ -48,7 +49,7 @@ loads it for every script).
 | | `GITNUT_SERVICE` | set by the service | Marks a daemon run by systemd / launchd, so a self-update restarts through the service. |
 
 Build machines also need `gh` logged in (`gh auth login`); `bun run setup` checks all of the above.
-On Coolify, `GITNUT_SITE_URL`, `GITNUT_RYBBIT_URL` and `GITNUT_RYBBIT_SITE_ID` are used at build time
+On Coolify, `GITNUT_SITE_URL`, `GITNUT_RYBBIT_URL`, `GITNUT_RYBBIT_SITE_ID` and `GITNUT_KOFI_URL` are used at build time
 too (the Dockerfile takes them as build args for the static pages); keep `GITNUT_RYBBIT_API_KEY`
 runtime only.
 

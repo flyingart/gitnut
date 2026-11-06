@@ -6,8 +6,10 @@ export const DIST = join(import.meta.dir, "..", "dist");
 export const RYBBIT_URL = "https://stats.example";
 export const RYBBIT_SITE = "test-site";
 export const RYBBIT_SCRIPT = `${RYBBIT_URL}/api/script.js?siteId=${RYBBIT_SITE}`;
+/** Placeholder Ko-fi page for the Pricing button (the real one lives in the Coolify env). */
+export const KOFI_URL = "https://ko-fi.com/example";
 if (!process.env.GITNUT_SITE_DIST_BUILT) {
-  const env = { ...process.env, GITNUT_RYBBIT_URL: RYBBIT_URL, GITNUT_RYBBIT_SITE_ID: RYBBIT_SITE };
+  const env = { ...process.env, GITNUT_RYBBIT_URL: RYBBIT_URL, GITNUT_RYBBIT_SITE_ID: RYBBIT_SITE, GITNUT_KOFI_URL: KOFI_URL };
   const r = Bun.spawnSync(["bun", "--bun", "astro", "build"], { cwd: join(import.meta.dir, ".."), stdout: "ignore", stderr: "pipe", env });
   if (r.exitCode !== 0) throw new Error(`astro build failed:\n${r.stderr}`);
   process.env.GITNUT_SITE_DIST_BUILT = "1";

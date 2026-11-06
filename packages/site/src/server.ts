@@ -46,7 +46,15 @@ export function createSite(env: Record<string, string | undefined> = process.env
     }
   };
   const ready = repo ? refresh() : Promise.resolve();
-  if (repo) setInterval(refresh, Number(env.GITNUT_GITHUB_REFRESH_MINUTES || 10) * 60_000).unref();
+  if (repo) {
+    const every = Number(env.GITNUT_GITHUB_REFRESH_MINUTES || 10) * 60_000;
+    // until the first successful read (GitHub down or rate limited at start), retry every minute
+    const tick = async () => {
+      await refresh();
+      setTimeout(tick, releases.length ? every : Math.min(every, 60_000)).unref();
+    };
+    void ready.then(() => setTimeout(tick, releases.length ? every : Math.min(every, 60_000)).unref());
+  }
   // Only http(s) links: the page puts these into hrefs.
   const link = (v?: string) => (/^https?:\/\//i.test(v?.trim() ?? "") ? v!.trim() : undefined);
   const sponsors = { github: link(env.GITNUT_SPONSOR_GITHUB), kofi: link(env.GITNUT_SPONSOR_KOFI), paypal: link(env.GITNUT_SPONSOR_PAYPAL) };

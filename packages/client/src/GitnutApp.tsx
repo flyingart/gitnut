@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Box, FolderPlus, GitBranch, Keyboard, Layers, List, ListTree, PanelLeft, Plus, Server, Settings, X } from "lucide-react";
+import { Box, Minus, Square, FolderPlus, GitBranch, Keyboard, Layers, List, ListTree, PanelLeft, Plus, Server, Settings, X } from "lucide-react";
 import type { RepoSummary } from "@gitnut/commons";
 import { AddProjectsDialog } from "./AddProjectsDialog";
 import { AddServerDialog } from "./AddServerDialog";
@@ -18,7 +18,7 @@ import { ServersPanel } from "./ServersPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { Shortcuts } from "./Shortcuts";
 import { accentTheme } from "./theme";
-import { useDesktopVersion } from "./desktop";
+import { desktopWindow, dragRegion, useDesktopVersion } from "./desktop";
 import { CLIENT_VERSION } from "./version";
 import { UpdateButton } from "./UpdateButton";
 import { Dialog, Empty, IconButton, Popover, useContextMenu } from "./ui";
@@ -184,7 +184,7 @@ function AppInner(props: GitnutAppProps) {
         <div className="gitnut-app-layout">
           {props.showSidebar !== false && sidebar && (
             <aside className={cx("sidebar", "gitnut-sidebar", "gitnut-glass")} aria-label="Projects">
-              <div className="gitnut-sidebar-head">
+              <div className="gitnut-sidebar-head" {...dragRegion}>
                 <Logo size={22} />
                 <span className="gitnut-wordmark">
                   git<span>nut</span>
@@ -238,7 +238,7 @@ function AppInner(props: GitnutAppProps) {
             </aside>
           )}
           <main className="gitnut-main">
-            <div className={cx("tabs", "gitnut-tabs")} role="tablist">
+            <div className={cx("tabs", "gitnut-tabs")} role="tablist" {...dragRegion}>
               {props.showSidebar !== false && (
                 <IconButton title={sidebar ? "Hide projects" : "Show projects"} icon={<PanelLeft size={14} />} onClick={() => setSidebar(!sidebar)} />
               )}
@@ -279,6 +279,12 @@ function AppInner(props: GitnutAppProps) {
                   </button>
                 </div>
               ))}
+              {desktopWindow && (
+                <>
+                  <span className="gitnut-toolbar-spacer" {...dragRegion} />
+                  <WindowControls />
+                </>
+              )}
             </div>
             {tabMenu.menu}
             <div className="gitnut-main-body">
@@ -343,6 +349,24 @@ function AppInner(props: GitnutAppProps) {
         </Dialog>
       )}
     </GitnutRoot>
+  );
+}
+
+/** Minimize / maximize / close for the app's own title bar (Windows, see desktop.ts). */
+function WindowControls() {
+  if (!desktopWindow) return null;
+  return (
+    <div className="gitnut-window-controls">
+      <button type="button" aria-label="Minimize" title="Minimize" onClick={() => void desktopWindow?.minimize()}>
+        <Minus size={14} />
+      </button>
+      <button type="button" aria-label="Maximize" title="Maximize" onClick={() => void desktopWindow?.toggleMaximize()}>
+        <Square size={11} />
+      </button>
+      <button type="button" className="gitnut-window-close" aria-label="Close" title="Close" onClick={() => void desktopWindow?.close()}>
+        <X size={15} />
+      </button>
+    </div>
   );
 }
 

@@ -2096,3 +2096,29 @@ select.gitnut-input {
   font-size: var(--gitnut-font-size-xs);
   white-space: nowrap;
 }
+
+/* ---- desktop app title bar (Windows: no native frame) ------------------------------------ */
+
+.gitnut-window-controls {
+  display: flex;
+  align-self: stretch;
+  flex: none;
+  margin-right: -6px; /* flush with the window edge (the tab bar has 6px padding) */
+}
+.gitnut-window-controls button {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  border: 0;
+  background: transparent;
+  color: var(--gitnut-muted-text);
+  cursor: default;
+}
+.gitnut-window-controls button:hover {
+  background: var(--gitnut-hover);
+  color: var(--gitnut-text);
+}
+.gitnut-window-controls .gitnut-window-close:hover {
+  background: #c42b1c;
+  color: #fff;
+}

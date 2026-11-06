@@ -85,7 +85,7 @@ export function createSite(env: Record<string, string | undefined> = process.env
 
   const noRelease = () => Response.json({ error: "no release published yet" }, { status: 503 });
 
-  async function installScript(name: string, req: Request): Promise<Response> {
+  async function installScript(name: string): Promise<Response> {
     const latest = releases[0];
     if (!latest) return noRelease();
     const text = (await Bun.file(join(DIST, name)).text())
@@ -138,7 +138,7 @@ export function createSite(env: Record<string, string | undefined> = process.env
     }
     if (pathname === "/install.sh" || pathname === "/install.ps1") {
       if (latest) track(req, ip, "install_script", { script: pathname.slice(1), version: latest.version, source: sourceOf(req.headers.get("user-agent") ?? "") });
-      return installScript(pathname.slice(1), req);
+      return installScript(pathname.slice(1));
     }
     if (pathname.startsWith("/download/")) {
       if (!latest) return noRelease();

@@ -1,0 +1,19 @@
+{
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "GitNut",
+        "url": "index.html",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 720,
+        "minHeight": 480,
+        "center": true,
+        "backgroundColor": "#07060b",
+        "theme": "Dark",
+        "decorations": false
+      }
+    ]
+  }
+}

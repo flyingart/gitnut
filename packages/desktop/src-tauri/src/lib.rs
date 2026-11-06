@@ -217,7 +217,8 @@ fn start(window: &WebviewWindow) -> Result<Url, (String, String)> {
     Ok(url)
 }
 
-/// Let the daemon's page (exactly this scheme://host:port) call the app's update commands, and nothing else.
+/// Let the daemon's page (exactly this scheme://host:port) call the app's update commands and the window
+/// controls of its own title bar, and nothing else.
 fn grant_daemon_page(window: &WebviewWindow, url: &Url) -> Result<(), String> {
     let origin = url.origin().ascii_serialization();
     let cap = tauri::ipc::CapabilityBuilder::new("daemon-page")
@@ -225,7 +226,12 @@ fn grant_daemon_page(window: &WebviewWindow, url: &Url) -> Result<(), String> {
         .remote(format!("{origin}/*"))
         .permission("allow-desktop-version")
         .permission("allow-desktop-update-check")
-        .permission("allow-desktop-update-install");
+        .permission("allow-desktop-update-install")
+        // Windows: the app draws its own title bar (tauri.windows.conf.json, decorations off)
+        .permission("core:window:allow-start-dragging")
+        .permission("core:window:allow-minimize")
+        .permission("core:window:allow-toggle-maximize")
+        .permission("core:window:allow-close");
     window.app_handle().add_capability(cap).map_err(|e| e.to_string())
 }
 

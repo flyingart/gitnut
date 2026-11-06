@@ -52,7 +52,7 @@ const BINARIES = ["linux-x64", "linux-arm64", "darwin-arm64", "darwin-x64", "win
 
     <header class="hero">
       <div class="hero-logo"><img src="/logo-wordmark.svg" alt="GitNut" width="392" height="128"></div>
-      <div><span class="pill"><span class="dot"></span><span>Built for AI coding agents</span><span class="sep">·</span><span id="version">Remote-first git client</span></span></div>
+      <div><span class="pill"><span class="beta">Beta</span><span>Built for AI coding agents</span><span class="sep">·</span><span id="version">Remote-first git client</span></span></div>
       <h1>See what your AI agents are doing. <span class="grad">Live.</span></h1>
       <p class="lede">Claude Code, Codex, Cursor and friends write code on your laptop, a dev VPS and a dozen worktrees at once. GitNut streams every repo, branch and uncommitted change from all of your machines into one window, with the log graph and diff viewer of IntelliJ IDEA.</p>
       <div class="cta">
@@ -162,6 +162,7 @@ const BINARIES = ["linux-x64", "linux-arm64", "darwin-arm64", "darwin-x64", "win
       <h2>Get GitNut</h2>
       <p class="section-lede">The desktop app starts its own daemon and opens the client. On servers, install the CLI: it is the daemon too.</p>
       <p class="release-line"><span id="dl-version"></span><a href="/changelog">What's new →</a></p>
+      <p class="beta-note"><span class="beta">Beta</span> GitNut is young: expect rough edges and frequent updates (the apps update themselves). Found a bug? <a href="https://github.com/flyingart/gitnut/issues">Tell us on GitHub</a>.</p>
       <div class="dl-grid">
         {DOWNLOADS.map((d) => <DownloadCard {...d} />)}
       </div>

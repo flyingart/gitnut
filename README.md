@@ -302,9 +302,9 @@ token is passed in the URL hash. Live examples: `/examples.html` on any daemon.
    `gitnut update` or that icon downloads the binary for the platform, verifies its SHA-256,
    replaces the executable and restarts it (a service is restarted by systemd/launchd, otherwise
    the new binary starts itself). The daemon serves the web client, so it updates with it.
-3. The desktop app updates itself too (Tauri updater, signed by our key): it checks every
-   10 minutes, asks "Install and restart", and its new bundled daemon replaces the old one.
-   Settings show the client and desktop app versions at the bottom.
+3. Inside the desktop app the same icon and button update the whole app (Tauri updater, signed by
+   our key, checked every 10 minutes); its new bundled daemon replaces the old one, so app, daemon and
+   web client always match. Settings show the versions at the bottom.
 
 ## Development
 

@@ -124,7 +124,8 @@ component) connects to many daemons and shows all their projects.
   the daemon; the app shows the web client served by that daemon. The desktop app
   keeps its daemon in the user data folder so web-client updates update it too. The app updates
   itself with the Tauri updater: `<site>/desktop/latest.json` (from the GitHub release), checked
-  every 10 minutes, signed with our updater key, "Install and restart" / "Later".
+  every 10 minutes, signed with our updater key. One update path: the client's update icon and
+  Settings button drive it for the app's own daemon; that daemon never updates by itself.
 - **R-UPD-6** Scripts build web + daemon binaries for all platforms, a release folder with
   `SHA256SUMS` (published as a GitHub release), and the desktop app on its host OS. Builds of macOS / Windows
   desktop apps happen manually on those machines (instructions in README).

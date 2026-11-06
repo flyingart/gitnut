@@ -2086,8 +2086,9 @@ select.gitnut-input {
 
 /* ---- desktop app title bar (Windows: no native frame) ------------------------------------ */
 
-/* macOS: the traffic lights float over the top-left corner (tauri.conf.json trafficLightPosition
-   16,15 centers them in the 44px bar). The first bar leaves them room; both bars get the same height. */
+/* macOS: the traffic lights float over the top-left corner. tauri.conf.json trafficLightPosition 16,24
+   centers them in the 44px bar (tao's y is the title bar container height minus the button height, not
+   the top offset). The first bar leaves them room; both bars get the same height. */
 .gitnut-mac-titlebar .gitnut-tabs {
   height: 44px;
 }

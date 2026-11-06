@@ -43,9 +43,9 @@ const version = values.version ?? (await Bun.file(join(ROOT, "package.json")).js
 const out = resolve(ROOT, values.out!);
 const WEB_DIST = resolve(ROOT, values["web-dir"]!);
 
-function run(cmd: string[], cwd = ROOT) {
+function run(cmd: string[], cwd = ROOT, env: Record<string, string> = {}) {
   console.log(`$ ${cmd.join(" ")}`);
-  const r = Bun.spawnSync(cmd, { cwd, stdout: "inherit", stderr: "inherit" });
+  const r = Bun.spawnSync(cmd, { cwd, stdout: "inherit", stderr: "inherit", env: { ...process.env, ...env } });
   if (r.exitCode !== 0) throw new Error(`failed: ${cmd.join(" ")}`);
 }
 
@@ -56,7 +56,8 @@ function files(dir: string): string[] {
   });
 }
 
-if (values["build-web"] && !values["no-web"]) run(["bun", "run", "--cwd", "packages/web", "build"]);
+// the web client shows the same version as the daemon that serves it
+if (values["build-web"] && !values["no-web"]) run(["bun", "run", "--cwd", "packages/web", "build"], ROOT, { GITNUT_VERSION: version });
 
 // Generated module: URL path -> embedded file path. Empty map = no web client in this build.
 rmSync(GENERATED, { recursive: true, force: true });

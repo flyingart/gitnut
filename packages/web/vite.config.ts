@@ -7,6 +7,8 @@ const daemon = process.env.GITNUT_DEV_DAEMON ?? "http://127.0.0.1:7421";
 
 export default defineConfig({
   plugins: [react()],
+  // The release version (GITNUT_VERSION, set by scripts/build-daemon.ts); the client falls back to package.json.
+  define: process.env.GITNUT_VERSION ? { __GITNUT_VERSION__: JSON.stringify(process.env.GITNUT_VERSION) } : {},
   server: {
     host: "0.0.0.0",
     port: 5174,

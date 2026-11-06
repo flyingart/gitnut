@@ -21,6 +21,9 @@
     /* Windows: no native frame, so a minimal title bar to move and close the window while it loads */
     .titlebar { display: none; position: fixed; inset: 0 0 auto 0; height: 34px; justify-content: flex-end; }
     body.win .titlebar { display: flex; }
+    /* macOS: the traffic lights float over the page (titleBarStyle "Overlay"); just a drag strip */
+    body.mac .titlebar { display: flex; height: 44px; }
+    body.mac .titlebar button { display: none; }
     .titlebar button { width: 46px; border: 0; background: transparent; color: #9a9aa6; font: 15px system-ui; }
     .titlebar button:hover { background: rgb(255 255 255 / 8%); color: #fff; }
     .titlebar .close:hover { background: #c42b1c; }
@@ -43,6 +46,7 @@
     const ipc = window.__TAURI_INTERNALS__;
     const win = (cmd) => ipc && ipc.invoke(`plugin:window|${cmd}`, { label: "main" });
     if (ipc && /Windows/i.test(navigator.userAgent)) document.body.classList.add("win");
+    if (ipc && /Macintosh/i.test(navigator.userAgent)) document.body.classList.add("mac");
     // Called from Rust through webview.eval.
     window.gitnutStatus = (text) => { document.getElementById("status").textContent = text; };
     window.gitnutError = (text, detail) => {

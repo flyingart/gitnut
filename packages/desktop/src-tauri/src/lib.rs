@@ -233,7 +233,8 @@ fn grant_daemon_page(window: &WebviewWindow, url: &Url) -> Result<(), String> {
         .permission("core:window:allow-toggle-maximize")
         .permission("core:window:allow-internal-toggle-maximize")
         .permission("core:window:allow-close")
-        .permission("core:window:allow-is-maximized");
+        .permission("core:window:allow-is-maximized")
+        .permission("core:window:allow-is-fullscreen");
     window.app_handle().add_capability(cap).map_err(|e| e.to_string())
 }
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from "react";
+import { Component, useCallback, useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { LoaderCircle, X } from "lucide-react";
 import { useCx } from "./root";
@@ -319,6 +319,20 @@ const DAY = new Intl.DateTimeFormat(undefined, { year: "2-digit", month: "numeri
 const FULL = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
 
 /** Format unix seconds like IntelliJ's log: "Today 14:02", "Yesterday 09:12", else a short date and time. */
+/** Shows `fallback` instead of crashing the tree when a child throws while rendering or in an effect. */
+export class ErrorBoundary extends Component<{ fallback: (error: Error) => ReactNode; children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  componentDidCatch(error: Error) {
+    console.error("gitnut:", error);
+  }
+  render() {
+    return this.state.error ? this.props.fallback(this.state.error) : this.props.children;
+  }
+}
+
 /** Bytes as B / KB / MB. */
 export const formatSize = (n: number) => (n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(1)} MB`);
 

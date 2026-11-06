@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { UpdateInfo } from "@gitnut/commons";
 
 // Bridge to the GitNut desktop app around this page (Tauri). The app gives its own daemon's page
-// three commands (src-tauri/capabilities/local-daemon.json); everywhere else this is null.
+// its commands (grant_daemon_page in src-tauri/src/lib.rs); everywhere else this is null.
 type Invoke = (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
 const ipc = (globalThis as { __TAURI_INTERNALS__?: { invoke: Invoke } }).__TAURI_INTERNALS__;
 
@@ -32,17 +32,10 @@ export const desktopWindow =
     : null;
 
 /**
- * Props that make an element the window's drag area (Tauri's `data-tauri-drag-region`); double-click on
- * the empty area maximizes / restores, like a native title bar. A no-op outside the app.
+ * Mark an element as the window's drag area (Tauri's `data-tauri-drag-region`). Tauri also maximizes /
+ * restores on double-click there, like a native title bar. A no-op outside the app.
  */
-export const dragRegion = desktopWindow
-  ? {
-      "data-tauri-drag-region": "",
-      onDoubleClick: (e: { target: EventTarget }) => {
-        if ((e.target as HTMLElement).hasAttribute?.("data-tauri-drag-region")) void desktopWindow?.toggleMaximize();
-      },
-    }
-  : {};
+export const dragRegion = desktopWindow ? { "data-tauri-drag-region": "" } : {};
 
 /** Whether the app window is maximized (for the maximize / restore icon); false outside the app. */
 export function useWindowMaximized(): boolean {

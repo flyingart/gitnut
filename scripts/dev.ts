@@ -24,14 +24,27 @@ if (hasWeb) {
   procs.push({ name: "web", cmd: ["bun", "run", "dev"], cwd: join(ROOT, "packages", "web"), env: { GITNUT_DEV_DAEMON: "http://127.0.0.1:7420" } });
   urls.push(`web (Vite)            http://${HOST}:5174   (proxies /ws and /api to the daemon)`);
 }
+// Site: astro dev (pages, live reload) proxies the dynamic routes to the Bun server on SITE_API_PORT.
+// The Bun server reads install scripts and robots.txt from dist/, so build once first.
+const SITE_API_PORT = process.env.SITE_API_PORT ?? "7432";
+const SITE = join(ROOT, "packages", "site");
+if (Bun.spawnSync(["bun", "run", "build"], { cwd: SITE, stdout: "inherit", stderr: "inherit" }).exitCode !== 0) process.exit(1);
 procs.push({
-  name: "site",
-  cmd: ["bun", "--watch", "packages/site/src/server.ts"],
+  name: "site-api",
+  cmd: ["bun", "--watch", "server/server.ts"],
+  cwd: SITE,
   env: {
-    PORT: SITE_PORT,
+    PORT: SITE_API_PORT,
+    HOST: "127.0.0.1",
     // releases (versions, downloads, changelog) come from GitHub, like in production
     GITNUT_GITHUB_REPO: process.env.GITNUT_GITHUB_REPO ?? "flyingart/gitnut",
   },
+});
+procs.push({
+  name: "site",
+  cmd: ["bun", "--bun", "astro", "dev", "--host", "0.0.0.0", "--port", SITE_PORT],
+  cwd: SITE,
+  env: { GITNUT_SITE_API: `http://127.0.0.1:${SITE_API_PORT}` },
 });
 urls.push(`site                  http://${HOST}:${SITE_PORT}`);
 

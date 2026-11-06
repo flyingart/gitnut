@@ -1,0 +1,15 @@
+---
+interface Props {
+  icon: string;
+  label: string;
+  /** Download key (/download/<key>), name and file hint per option. */
+  options: { key: string; name: string; file: string }[];
+}
+const { icon, label, options } = Astro.props;
+---
+<div class="os glass">
+          <header><svg><use href={`#i-${icon}`}/></svg>{label}</header>
+          <div class="opts">
+            {options.map((o) => <a class="dl" data-key={o.key} href={`/download/${o.key}`}><span>{o.name}<br><small>{o.file}</small></span><span class="arrow">↓</span></a>)}
+          </div>
+        </div>

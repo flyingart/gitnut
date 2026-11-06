@@ -1,0 +1,69 @@
+---
+import Footer from "../components/Footer.astro";
+import Header from "../components/Header.astro";
+
+interface Props {
+  title: string;
+  description: string;
+  /** Canonical path, e.g. "/changelog". */
+  path: string;
+  ogType?: string;
+  /** Social card texts; default to title and description. */
+  ogTitle?: string;
+  ogDescription?: string;
+  twitterTitle?: string;
+  twitterDescription?: string;
+  twitterImageAlt?: string;
+}
+const { title, description, path, ogType = "website", ogTitle = title, ogDescription = description, twitterTitle = ogTitle, twitterDescription = ogDescription, twitterImageAlt } = Astro.props;
+const url = new URL(path, Astro.site).href;
+const image = new URL("/og.png", Astro.site).href;
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{title}</title>
+  <meta name="description" content={description}>
+  <link rel="canonical" href={url}>
+  <meta name="theme-color" content="#07060d">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:type" content={ogType}>
+  <meta property="og:site_name" content="GitNut">
+  <meta property="og:title" content={ogTitle}>
+  <meta property="og:description" content={ogDescription}>
+  <meta property="og:url" content={url}>
+  <meta property="og:image" content={image}>
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="GitNut logo, the tagline “See what your AI agents are doing. Live.” and a screenshot of the GitNut commit graph">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content={twitterTitle}>
+  <meta name="twitter:description" content={twitterDescription}>
+  <meta name="twitter:image" content={image}>
+  {twitterImageAlt && <meta name="twitter:image:alt" content={twitterImageAlt}>}
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <slot name="head" />
+  <link rel="stylesheet" href="/style.css?v=5">
+  <!-- Self-hosted, cookieless Rybbit analytics (see /privacy). It sets no cookies and stores nothing in the
+       browser, so the site needs no cookie banner. -->
+  <script is:inline src="https://pulse.flyingart.dev/api/script.js?siteId=2f92cca69f3e" defer></script>
+  <slot name="scripts" />
+</head>
+<body>
+  <slot name="body-start" />
+  <div class="aurora"></div>
+
+  <Header />
+
+  <main class="wrap">
+    <slot />
+  </main>
+
+  <Footer />
+  <slot name="body-end" />
+</body>
+</html>

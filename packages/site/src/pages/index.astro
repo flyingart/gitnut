@@ -1,0 +1,213 @@
+---
+import Cmd from "../components/Cmd.astro";
+import DownloadCard from "../components/DownloadCard.astro";
+import Icons from "../components/Icons.astro";
+import InstallHelp from "../components/InstallHelp.astro";
+import Step from "../components/Step.astro";
+import Tile from "../components/Tile.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const DOWNLOADS = [
+  { icon: "apple", label: "macOS", options: [
+    { key: "desktop-darwin-arm64", name: "Apple Silicon", file: ".dmg · arm64" },
+    { key: "desktop-darwin-x64", name: "Intel", file: ".dmg · x64" },
+  ] },
+  { icon: "windows", label: "Windows", options: [{ key: "desktop-windows-x64", name: "Installer", file: "-setup.exe · Windows 10, 11" }] },
+  { icon: "linux", label: "Linux", options: [
+    { key: "desktop-linux-x64", name: "AppImage", file: ".AppImage · x64" },
+    { key: "desktop-linux-x64-deb", name: "Debian, Ubuntu", file: ".deb · x64" },
+  ] },
+];
+const BINARIES = ["linux-x64", "linux-arm64", "darwin-arm64", "darwin-x64", "windows-x64"];
+---
+<BaseLayout
+  title="GitNut: git client for AI coding agents, live across all your machines"
+  description="Monitor Claude Code, Codex and Cursor agents in one git client. Live uncommitted changes from every machine and worktree, an IntelliJ-style git graph and side-by-side diffs. Free and open source."
+  path="/"
+  ogTitle="GitNut: see what your AI agents are doing. Live."
+  ogDescription="The git client for monitoring AI coding agents. Live uncommitted changes, every agent branch in one IntelliJ-style graph, across all your machines."
+  twitterDescription="The git client for monitoring AI coding agents across all your machines, with an IntelliJ-style graph and diffs."
+  twitterImageAlt="GitNut logo, tagline and a screenshot of the commit graph"
+>
+  <script type="application/ld+json" slot="head" is:inline>
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "GitNut",
+    "description": "Git client for monitoring AI coding agents (Claude Code, Codex, Cursor) across machines and worktrees, with an IntelliJ-style git graph and diffs.",
+    "url": "https://gitnut.dev/",
+    "image": "https://gitnut.dev/og.png",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "macOS, Windows, Linux",
+    "downloadUrl": "https://gitnut.dev/#download",
+    "softwareHelp": "https://github.com/flyingart/gitnut#readme",
+    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Organization", "name": "Flying Art", "url": "https://flyingart.dev" }
+  }
+  </script>
+  <script type="module" src="/app.js" slot="scripts" is:inline></script>
+  <Icons slot="body-start" />
+
+    <header class="hero">
+      <div class="hero-logo"><img src="/logo-wordmark.svg" alt="GitNut" width="392" height="128"></div>
+      <div><span class="pill"><span class="dot"></span><span>Built for AI coding agents</span><span class="sep">·</span><span id="version">Remote-first git client</span></span></div>
+      <h1>See what your AI agents are doing. <span class="grad">Live.</span></h1>
+      <p class="lede">Claude Code, Codex, Cursor and friends write code on your laptop, a dev VPS and a dozen worktrees at once. GitNut streams every repo, branch and uncommitted change from all of your machines into one window, with the log graph and diff viewer of IntelliJ IDEA.</p>
+      <div class="cta">
+        <a class="btn primary" id="primary-dl" href="#download">
+          <svg id="primary-icon"><use href="#i-down"/></svg>
+          <span><span class="main" id="primary-label">Download GitNut</span><span class="sub" id="primary-sub">Desktop app for macOS, Windows and Linux</span></span>
+        </a>
+        <a class="btn" href="#how">How it works</a>
+      </div>
+      <p class="alt-note" id="alt-note"></p>
+      <Cmd id="hero-cmd" codeId="hero-cmd-text">curl -fsSL /install.sh | sh</Cmd>
+
+      <div class="shot glass" id="shot" data-tilt-card>
+        <div class="bar"><i></i><i></i><i></i><span class="bar-title">GitNut · all uncommitted changes, live</span></div>
+      </div>
+      <div class="agents">
+        <span>Works with every agent that uses git</span>
+        <ul>
+          <li>Claude Code</li><li>Codex</li><li>Cursor</li><li>T3 Code</li><li>Jean</li><li>Aider</li><li>Cline</li><li>plain <code>git worktree</code></li>
+        </ul>
+      </div>
+    </header>
+
+    <section id="problem">
+      <div class="eyebrow">The problem</div>
+      <h2>Agents work in parallel. Your git client doesn't.</h2>
+      <div class="vs">
+        <div class="vs-col glass">
+          <h3>Without GitNut</h3>
+          <ul class="x">
+            <li>SSH into each box, <code>cd</code> into each worktree, run <code>git status</code> again and again</li>
+            <li>No idea which agent touched which file until it is already committed</li>
+            <li>Reviewing a whole task means stitching together diffs commit by commit</li>
+            <li>A desktop git client only sees one machine, one repo at a time</li>
+          </ul>
+        </div>
+        <div class="vs-col glass good">
+          <h3>With GitNut</h3>
+          <ul class="ok">
+            <li>Every machine, repo and worktree in one sidebar, updating by itself</li>
+            <li>Uncommitted edits show up seconds after an agent saves a file</li>
+            <li>Select an agent's commits and read the combined change, file by file</li>
+            <li>Commit, fetch, pull and push without leaving the window</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="how">
+      <div class="eyebrow">How it works</div>
+      <h2>One small daemon per machine. One window for all of them.</h2>
+      <ol class="steps">
+        <Step n={1} title="Agents work as usual">In repos and worktrees on your laptop, a VPS or a build box. Nothing to change in your agent setup.</Step>
+        <Step n={2} title="GitNut watches">The <code>gitnut</code> daemon finds the repos, polls only what you look at, and never takes a git lock, so it can't block an agent.</Step>
+        <Step n={3} title="You see it live">Changes stream over WebSocket to the desktop app, a browser tab, or a panel inside your own tool. Over localhost or Tailscale.</Step>
+        <Step n={4} title="You step in">Review, commit, fetch, pull, push. Hide noisy repos, watch whole folders so new agent repos appear on their own.</Step>
+      </ol>
+    </section>
+
+    <section id="features">
+      <div class="eyebrow">Features</div>
+      <h2>Everything you need to keep up with your agents.</h2>
+      <div class="bento">
+        <Tile kind="live" tag="Live" title="Live uncommitted changes" image="/screenshots/local-changes.png" alt="GitNut showing live uncommitted changes from several worktrees">Every worktree's edits, updated while agents type. "All uncommitted changes" merges several projects into one tree, so three agents on three repos fit on one screen.</Tile>
+        <Tile title="Review a whole task at once">
+          <svg slot="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/><path d="M11 9c1 0 1 2 2 2M11 15c1 0 1-2 2-2"/></svg>
+          Ctrl+click the commits of one task, even far apart, and read their combined change per file, with word-level highlights and IntelliJ's connector bands.
+        </Tile>
+        <Tile title="All your machines">
+          <svg slot="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/></svg>
+          Laptop, VPS, CI box: each runs one <code>gitnut</code> daemon. Group projects by server or see one flat list.
+        </Tile>
+        <Tile kind="graph" tag="Graph" title="Every agent branch in one graph" image="/screenshots/log.png" alt="GitNut commit graph with several agent branches" imageFirst>Local, remote and tag refs in one IntelliJ-style graph: same lanes, colours and long-edge arrows, smooth with 80k+ commits. See where each agent branched off and what it merged.</Tile>
+        <Tile title="Embed it in your agent tool">
+          <svg slot="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/></svg>
+          Every piece is a React component. Put <code>&lt;LocalChanges/&gt;</code> next to your agent's chat, or embed the whole client with an iframe.
+        </Tile>
+        <Tile title="Light and safe">
+          <svg slot="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v6c0 4 3 7 7 9 4-2 7-5 7-9V6z"/></svg>
+          One binary, no database, no git locks. Localhost by default, token auth and Tailscale when you open it up. Self-updates with checksums.
+        </Tile>
+      </div>
+    </section>
+
+    <section id="screens">
+      <div class="eyebrow">Screens</div>
+      <h2>Feels like IntelliJ. Looks like <span class="year">2026</span>.</h2>
+      <div class="gallery" id="gallery"></div>
+    </section>
+
+    <section id="embed">
+      <div class="eyebrow">For tool builders</div>
+      <h2>Show your agent's changes inside your own app.</h2>
+      <p class="section-lede">Building an agent UI? Drop in one component and your users see exactly what the agent changed, live, without leaving your app.</p>
+      <pre class="code glass"><code is:raw><span class="k">import</span> { LocalChanges } <span class="k">from</span> <span class="s">"@gitnut/client"</span>;
+
+<span class="c">// Live uncommitted changes of the agent's worktree, next to its chat.</span>
+&lt;<span class="t">LocalChanges</span>
+  server={{ url: <span class="s">"http://127.0.0.1:7420"</span> }}
+  worktreePath={agent.worktree}
+  theme={{ colors: { primary: <span class="s">"#0f766e"</span> }, radius: { md: <span class="s">"10px"</span> } }}
+/&gt;</code></pre>
+    </section>
+
+    <section id="download">
+      <div class="eyebrow">Download</div>
+      <h2>Get GitNut</h2>
+      <p class="section-lede">The desktop app starts its own daemon and opens the client. On servers, install the CLI: it is the daemon too.</p>
+      <p class="release-line"><span id="dl-version"></span><a href="/changelog">What's new →</a></p>
+      <div class="dl-grid">
+        {DOWNLOADS.map((d) => <DownloadCard {...d} />)}
+      </div>
+
+      <div class="cli glass">
+        <div>
+          <h3><svg width="16" height="16" style="vertical-align:-3px;margin-right:6px"><use href="#i-term"/></svg>CLI and daemon</h3>
+          <Cmd cmd="sh">curl -fsSL /install.sh | sh</Cmd>
+          <Cmd cmd="ps1" ps>irm /install.ps1 | iex</Cmd>
+          <p>Installs to <code>~/.gitnut/bin</code> after checking the SHA-256. Then <code>gitnut service install</code> and open the URL from <code>gitnut status</code>. Add projects in the app.</p>
+        </div>
+        <div>
+          <h3>Binaries</h3>
+          <div class="bins">
+            {BINARIES.map((b) => <a href={`/download/${b}`}>{b}</a>)}
+            <a href="/manifest.json">manifest.json</a>
+          </div>
+          <p id="sums"></p>
+        </div>
+      </div>
+      <InstallHelp />
+    </section>
+    <section id="support">
+      <div class="eyebrow">Support</div>
+      <h2>Stuck, or want to help?</h2>
+      <div class="support">
+        <div class="help glass">
+          <h3>Get help</h3>
+          <p>Found a bug or have an idea? Open an issue. The README covers setup, the daemon and embedding.</p>
+          <div class="help-links">
+            <a class="btn" href="https://github.com/flyingart/gitnut/issues"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>GitHub issues</a>
+            <a class="btn" href="https://github.com/flyingart/gitnut#readme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2zM4 19V5"/></svg>Docs (README)</a>
+          </div>
+        </div>
+        <div class="donate glass" id="donate" hidden>
+          <h3>Support development</h3>
+          <p>GitNut is free and open source. If it saves you time, a small tip keeps it going.</p>
+          <div class="donate-links" id="sponsors"></div>
+        </div>
+      </div>
+    </section>
+
+  <dialog slot="body-end" class="lightbox" id="lightbox" aria-label="Screenshot">
+    <figure><img alt=""><figcaption></figcaption></figure>
+    <button class="lb-close" type="button" aria-label="Close">✕</button>
+    <button class="lb-nav prev" type="button" aria-label="Previous">‹</button>
+    <button class="lb-nav next" type="button" aria-label="Next">›</button>
+  </dialog>
+</BaseLayout>

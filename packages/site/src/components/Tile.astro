@@ -1,0 +1,30 @@
+---
+// Feature tile: a small one with an icon (slot "icon"), or a big one with a screenshot (image).
+interface Props {
+  title: string;
+  /** Big tile: class, tag, screenshot and whether the screenshot comes first. */
+  kind?: string;
+  tag?: string;
+  image?: string;
+  alt?: string;
+  imageFirst?: boolean;
+}
+const { title, kind, tag, image, alt, imageFirst } = Astro.props;
+---
+{kind ? (
+  <article class={`tile big ${kind}`}>
+    {imageFirst && <div class="crop"><img src={image} alt={alt} loading="lazy"></div>}
+    <div class="tile-text">
+      <span class="tag">{tag}</span>
+      <h3>{title}</h3>
+      <p><slot /></p>
+    </div>
+    {!imageFirst && <div class="crop"><img src={image} alt={alt} loading="lazy"></div>}
+  </article>
+) : (
+  <article class="tile">
+    <div class="ic"><slot name="icon" /></div>
+    <h3>{title}</h3>
+    <p><slot /></p>
+  </article>
+)}

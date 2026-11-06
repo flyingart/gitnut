@@ -396,8 +396,8 @@ h2 { font-size: clamp(1.7rem, 3.5vw, 2.4rem); letter-spacing: -0.035em; line-hei
 
 /* legal pages (privacy, terms) */
 .legal { max-width: 46rem; margin: 3rem 0 0; padding: 1.8rem 2rem; color: var(--muted); }
-.legal section { padding: 0; }
-.legal section + section { margin-top: 1.8rem; }
+/* Markdown pages: an h2 starts a new section */
+.legal h2:not(:first-child) { margin-top: 1.8rem; }
 .legal h2 { margin: 0 0 0.6rem; font-size: 1.25rem; color: var(--foreground); }
 .legal p, .legal ul { margin: 0 0 0.7rem; }
 .legal ul { padding-left: 1.2rem; display: grid; gap: 0.35rem; }

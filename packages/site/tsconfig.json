@@ -1,1 +1,1 @@
-{ "extends": "../../tsconfig.base.json", "compilerOptions": { "allowJs": true, "checkJs": false }, "include": ["src", "test", "public/detect.js"] }
+{ "extends": "../../tsconfig.base.json", "compilerOptions": { "allowJs": true, "checkJs": false }, "include": ["server", "test", "public/detect.js"] }

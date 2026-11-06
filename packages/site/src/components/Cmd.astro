@@ -1,0 +1,11 @@
+---
+// Copyable command box; app.js wires the Copy button and fills [data-cmd] with the site's origin.
+interface Props {
+  id?: string;
+  codeId?: string;
+  cmd?: "sh" | "ps1";
+  ps?: boolean;
+}
+const { id, codeId, cmd, ps } = Astro.props;
+---
+<div class:list={["cmd glass", { ps }]} id={id}><code id={codeId} data-cmd={cmd}><slot /></code><button class="copy" type="button">Copy</button></div>

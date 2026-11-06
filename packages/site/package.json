@@ -13,10 +13,14 @@
   },
   "bugs": "https://github.com/flyingart/gitnut/issues",
   "scripts": {
-    "dev": "bun --watch src/server.ts",
-    "start": "bun src/server.ts"
+    "dev": "bun --bun astro dev --host 0.0.0.0",
+    "build": "bun --bun astro build",
+    "start": "bun server/server.ts"
   },
   "dependencies": {
     "@gitnut/commons": "workspace:*"
+  },
+  "devDependencies": {
+    "astro": "^7.4.7"
   }
 }

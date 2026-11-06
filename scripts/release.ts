@@ -7,7 +7,7 @@
 // Needs: gh (logged in), .env with GITNUT_SITE_URL (+ TAURI_SIGNING_PRIVATE_KEY for desktop builds).
 import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { hostname, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import * as p from "@clack/prompts";
@@ -205,7 +205,8 @@ async function build() {
   const built = readdirSync(dir).filter((f) => !f.startsWith(SHA256SUMS) && statSync(join(dir, f)).isFile());
   const sums: Record<string, string> = {};
   for (const f of built) sums[f] = createHash("sha256").update(readFileSync(join(dir, f))).digest("hex");
-  const partial = join(dir, `SHA256SUMS.${hostname().replace(/[^\w.-]/g, "_")}-${process.platform}`);
+  // per-machine name without the host name (draft assets are visible to repo members)
+  const partial = join(dir, `SHA256SUMS.${process.platform}-${process.arch}-${crypto.randomUUID().slice(0, 8)}`);
   writeFileSync(partial, formatSha256Sums(sums));
   const s = p.spinner();
   s.start(`Uploading ${built.length} files to the draft v${version}`);

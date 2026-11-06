@@ -1,0 +1,28 @@
+{
+  "name": "@gitnut/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "Flying Art (https://flyingart.dev)",
+  "homepage": "https://gitnut.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flyingart/gitnut.git",
+    "directory": "packages/web"
+  },
+  "bugs": "https://github.com/flyingart/gitnut/issues",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@gitnut/client": "workspace:*",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "vite": "*",
+    "@vitejs/plugin-react": "*"
+  }
+}

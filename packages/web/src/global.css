@@ -1,0 +1,14 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: #07060b;
+  /* the app fills the window and scrolls inside its panels; never a page scrollbar */
+  overflow: hidden;
+}
+body.gitnut-embed {
+  background: transparent;
+}

@@ -15,6 +15,10 @@ COPY packages/commons packages/commons
 COPY packages/site packages/site
 # The README screenshots double as the gallery: public/ is copied into dist/ by the build.
 COPY docs/screenshots packages/site/public/screenshots
+# Build-time settings (Coolify passes its env vars as build args): canonical URL and the analytics script.
+ARG GITNUT_SITE_URL
+ARG GITNUT_RYBBIT_URL
+ARG GITNUT_RYBBIT_SITE_ID
 RUN cd packages/site && bun run build \
  && bun build server/server.ts --target bun --outfile /out/server/server.js \
  && cp -r dist /out/dist

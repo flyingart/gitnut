@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { createSite } from "../server/server";
-import { DIST } from "./dist";
+import { DIST, RYBBIT_SCRIPT, RYBBIT_URL } from "./dist";
 
 const SUMS = `${"a".repeat(64)}  gitnut-linux-x64\n${"b".repeat(64)}  GitNut-1.4.0-darwin-arm64.dmg\n`;
 const FILES = [
@@ -178,8 +178,8 @@ describe("site", () => {
     for (const page of pages) {
       const html = await Bun.file(join(DIST, page)).text();
       const head = html.slice(0, html.indexOf("</head>"));
-      expect({ page, count: html.split("https://pulse.flyingart.dev/api/script.js?siteId=2f92cca69f3e").length - 1 }).toEqual({ page, count: 1 });
-      expect(head).toContain('<script src="https://pulse.flyingart.dev/api/script.js?siteId=2f92cca69f3e" defer></script>');
+      expect({ page, count: html.split(RYBBIT_SCRIPT).length - 1 }).toEqual({ page, count: 1 });
+      expect(head).toContain(`<script src="${RYBBIT_SCRIPT}" defer></script>`);
     }
   });
 
@@ -188,7 +188,7 @@ describe("site", () => {
     for (const path of ["/", "/changelog", "/privacy", "/terms"]) {
       const html = await (await s.get(path)).text();
       const count = (needle: string) => html.split(needle).length - 1;
-      expect({ path, rybbit: count('src="https://pulse.flyingart.dev/api/script.js'), canonical: count('rel="canonical"'), footer: count('<footer class="site-footer">') })
+      expect({ path, rybbit: count(`src="${RYBBIT_URL}/api/script.js`), canonical: count('rel="canonical"'), footer: count('<footer class="site-footer">') })
         .toEqual({ path, rybbit: 1, canonical: 1, footer: 1 });
       expect(html).toContain(`<link rel="canonical" href="https://gitnut.dev${path}">`);
       const footer = html.slice(html.indexOf('<footer class="site-footer">'));
@@ -304,5 +304,46 @@ describe("site from GitHub releases", () => {
     expect(await dl.text()).toBe("BINARY");
     expect(s.seen.filter((x) => x.url.startsWith("https://storage.example")).every((x) => x.auth === null)).toBe(true);
     expect(s.seen.find((x) => x.url.includes("/releases?"))?.auth).toBe("Bearer secret-token");
+  });
+});
+
+describe("download statistics (Rybbit)", () => {
+  test("R-SITE-4: release files and install scripts become server-side events with the visitor's IP; checksums and signatures don't", async () => {
+    const events: { auth: string | null; body: Record<string, string> }[] = [];
+    const fetchImpl = (async (url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u === "https://stats.example/api/track") {
+        events.push({ auth: new Headers(init?.headers).get("authorization"), body: JSON.parse(String(init?.body)) });
+        return Response.json({ success: true });
+      }
+      if (u.includes("/releases?")) return Response.json([RELEASE]);
+      return new Response("x");
+    }) as unknown as typeof fetch;
+    const env = { ...ENV, GITNUT_RYBBIT_URL: "https://stats.example/", GITNUT_RYBBIT_SITE_ID: "s1", GITNUT_RYBBIT_API_KEY: "k" };
+    const handle = createSite(env, fetchImpl);
+    const get = (path: string, headers: Record<string, string> = {}) => handle(new Request(`http://site.local${path}`, { headers }), "10.0.0.1");
+    await get("/releases/1.4.0/GitNut-1.4.0-darwin-arm64.dmg", { "user-agent": "Mozilla/5.0", "cf-connecting-ip": "203.0.113.7" });
+    await get("/releases/1.4.0/gitnut-linux-x64", { "user-agent": "curl/8.5.0" });
+    await get("/releases/1.4.0/GitNut-1.4.0-darwin-arm64.app.tar.gz", { "user-agent": "tauri-updater" });
+    await get("/releases/1.4.0/SHA256SUMS");
+    await get("/releases/1.4.0/GitNut-1.4.0-windows-x64-setup.exe.sig");
+    await get("/install.sh", { "user-agent": "curl/8.5.0" });
+    await Bun.sleep(10);
+    expect(events.every((e) => e.auth === "Bearer k")).toBe(true);
+    expect(events.map((e) => [e.body.event_name, JSON.parse(e.body.properties)])).toEqual([
+      ["file_download", { file: "GitNut-1.4.0-darwin-arm64.dmg", version: "1.4.0", platform: "desktop-darwin-arm64", source: "browser" }],
+      ["file_download", { file: "gitnut-linux-x64", version: "1.4.0", platform: "linux-x64", source: "cli" }],
+      ["file_download", { file: "GitNut-1.4.0-darwin-arm64.app.tar.gz", version: "1.4.0", platform: "desktop-darwin-arm64-update", source: "desktop-app" }],
+      ["install_script", { script: "install.sh", version: "1.4.0", source: "cli" }],
+    ]);
+    expect(events[0].body).toMatchObject({ site_id: "s1", type: "custom_event", hostname: "gitnut.example.com", ip_address: "203.0.113.7", user_agent: "Mozilla/5.0" });
+    expect(events[1].body.ip_address).toBe("10.0.0.1"); // no proxy header: the socket address
+  });
+
+  test("R-SITE-4: no Rybbit settings, no events", async () => {
+    const calls: string[] = [];
+    const handle = createSite(ENV, (async (url: string) => (calls.push(String(url)), String(url).includes("/releases?") ? Response.json([RELEASE]) : new Response("x"))) as unknown as typeof fetch);
+    await handle(new Request("http://site.local/releases/1.4.0/gitnut-linux-x64"));
+    expect(calls.some((u) => u.includes("/api/track"))).toBe(false);
   });
 });

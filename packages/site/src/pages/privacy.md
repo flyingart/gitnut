@@ -15,7 +15,7 @@ GitNut is made by Flying Art. The data controller is GlideByte Artur Kumszczyńs
 The app and the `gitnut` daemon collect no telemetry, usage data or crash reports. They only talk to:
 
 - the GitNut daemons (servers) you add yourself;
-- the update check, a plain request for `https://gitnut.dev/manifest.json`. It sends no account, ID or app data. When you install an update, the app downloads the file for your platform through gitnut.dev from GitHub Releases. You can turn the automatic check off in the settings.
+- the update check, a plain request for `https://gitnut.dev/manifest.json` (the daemon) or `https://gitnut.dev/desktop/latest.json` (the desktop app, every 10 minutes). It sends no account, ID or app data. When you install an update, the app downloads the file for your platform through gitnut.dev from GitHub Releases. The daemon's automatic check can be turned off in the settings.
 
 Like any web request, the update check shows your IP address and the HTTP client name to our server and to Cloudflare (see Hosting).
 
@@ -28,7 +28,8 @@ To count visits, the server hashes your IP address and browser details with a sa
 - pages viewed and the referring site;
 - approximate location (country, region, city) derived from the IP address;
 - browser, operating system, device type, screen size and language;
-- clicks on downloads, install commands and links to other sites.
+- clicks on downloads, install commands and links to other sites;
+- downloads of GitNut files and install scripts from gitnut.dev, also app updates: our server reports the file, version, platform and kind of client (browser, install script, app) to Rybbit, with your IP address and browser details for the same daily-salted count and location. The IP address is not stored there either.
 
 The legal basis is our legitimate interest in knowing how the site is used (GDPR Art. 6(1)(f)). You can object by emailing us, or block the script with your browser or an ad blocker.
 

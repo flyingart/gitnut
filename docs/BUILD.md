@@ -39,6 +39,8 @@ loads it for every script).
 | | `GITNUT_GITHUB_TOKEN` | no | Read-only token while the repo is private (files are then streamed through the site). |
 | | `GITNUT_GITHUB_REFRESH_MINUTES` | no | How often releases are re-read (default 10). |
 | | `GITNUT_SPONSOR_GITHUB` / `_KOFI` / `_PAYPAL` | no | Donation links shown in the Support section. |
+| | `GITNUT_RYBBIT_URL` / `GITNUT_RYBBIT_SITE_ID` | no | Self-hosted Rybbit analytics (build time and runtime): the page script, and the site the server's download events go to. Unset: no analytics. |
+| | `GITNUT_RYBBIT_API_KEY` | no | Rybbit API key (runtime only) for server-side `file_download` / `install_script` events, sent with the visitor's IP and user agent so Rybbit can tell country, device and unique visitors. |
 | | `PORT` / `HOST` | no | Listen address, default `0.0.0.0:7431`. |
 | Daemon at runtime | `GITNUT_HOME` | no | Config folder, default `~/.gitnut`. |
 

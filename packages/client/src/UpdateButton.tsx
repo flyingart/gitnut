@@ -16,9 +16,12 @@ export interface UpdateButtonProps extends StyleProps {
   label?: string;
 }
 
-/** Checks for and applies daemon updates (the daemon serves the web client, so both update), then follows the restart. */
+/**
+ * Checks for and applies updates of one server (see useUpdate): inside the desktop app, its own daemon
+ * updates with the app; any other daemon updates itself (and with it the web client it serves).
+ */
 export function UpdateButton(props: UpdateButtonProps) {
-  const { info, phase, message, check, apply } = useUpdate(props.server);
+  const { info, phase, message, check, apply, viaApp } = useUpdate(props.server);
   const working = phase === "checking" || phase === "applying" || phase === "restarting";
   if (!info?.available && !props.showWhenCurrent && phase !== "done" && phase !== "restarting" && phase !== "applying") return null;
   if (props.compact) {
@@ -42,7 +45,7 @@ export function UpdateButton(props: UpdateButtonProps) {
       )}
       {(message || info) && (
         <span className={phase === "error" ? "gitnut-error-text" : "gitnut-muted"} role="status">
-          {message ?? (info?.error ? info.error : `gitnut ${info?.current}`)}
+          {message ?? (info?.error ? info.error : info?.managedBy ? "Updates come with the GitNut desktop app" : `${viaApp ? "GitNut app" : "gitnut"} ${info?.current}`)}
         </span>
       )}
     </GitnutRoot>

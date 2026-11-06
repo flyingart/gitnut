@@ -110,3 +110,16 @@ test("R-UPD-3: running from source refuses update.apply without GITNUT_EXEC_PATH
     process.env.GITNUT_EXEC_PATH = exe;
   }
 });
+
+test("R-UPD-5: a daemon started by the desktop app leaves updates to the app", async () => {
+  process.env.GITNUT_MANAGED_BY = "desktop";
+  try {
+    const info = await c.call("update.check");
+    expect(info).toMatchObject({ available: false, managedBy: "desktop" });
+    const r = await c.send("update.apply");
+    expect(r.error.code).toBe("conflict");
+    expect(r.error.message).toContain("desktop app");
+  } finally {
+    delete process.env.GITNUT_MANAGED_BY;
+  }
+});

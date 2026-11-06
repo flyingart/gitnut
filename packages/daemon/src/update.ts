@@ -15,7 +15,11 @@ async function fetchManifest(url: string): Promise<UpdateManifest> {
   return m;
 }
 
+/** "desktop" when the desktop app started this daemon (GITNUT_MANAGED_BY): the app updates both. */
+export const managedBy = (): UpdateInfo["managedBy"] => (process.env.GITNUT_MANAGED_BY === "desktop" ? "desktop" : undefined);
+
 export async function checkUpdate(s: Settings): Promise<UpdateInfo & { manifest?: UpdateManifest }> {
+  if (managedBy()) return { current: VERSION, latest: null, available: false, managedBy: "desktop" };
   const url = manifestUrl(s);
   if (!url) return { current: VERSION, latest: null, available: false, error: "updates are off (no manifest URL)" };
   try {
@@ -56,6 +60,7 @@ async function expectedSha(assetUrl: string, sha256?: string): Promise<string> {
 
 /** Download, verify and atomically install the latest binary. Returns the installed version. */
 export async function applyUpdate(s: Settings): Promise<string> {
+  if (managedBy()) fail("conflict", "this daemon comes with the GitNut desktop app: update the app, it brings the daemon");
   const target = execPath();
   const info = await checkUpdate(s);
   if (!info.manifest) fail("internal", info.error ?? "no manifest");

@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Local loading page only. No `remote` entry: the daemon's web client (http://127.0.0.1:*, Tailscale IP) gets no Tauri IPC.",
+  "description": "Local loading page. The daemon's web client gets only the update commands (local-daemon.json).",
   "windows": ["main"],
   "permissions": ["core:default"]
 }

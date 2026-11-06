@@ -1,7 +1,15 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Local loading page. The daemon's web client gets only the three update commands, granted at runtime for its exact address (lib.rs, grant_daemon_page).",
-  "windows": ["main"],
-  "permissions": ["core:default"]
+  "description": "Local loading page: core APIs plus moving, minimizing, maximizing and closing the window (its own title bar on Windows). The daemon's web client gets the update commands and the same window controls, granted at runtime for its exact address (lib.rs, grant_daemon_page).",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close"
+  ]
 }

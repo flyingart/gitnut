@@ -18,10 +18,20 @@
       background: color-mix(in srgb, #0c0c10 80%, transparent); border: 1px solid rgb(255 255 255 / 8%); border-radius: 0.5rem;
       color: #f0a0a0; font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; -webkit-user-select: text; user-select: text; }
     body.error .spin { display: none; }
+    /* Windows: no native frame, so a minimal title bar to move and close the window while it loads */
+    .titlebar { display: none; position: fixed; inset: 0 0 auto 0; height: 34px; justify-content: flex-end; }
+    body.win .titlebar { display: flex; }
+    .titlebar button { width: 46px; border: 0; background: transparent; color: #9a9aa6; font: 15px system-ui; }
+    .titlebar button:hover { background: rgb(255 255 255 / 8%); color: #fff; }
+    .titlebar .close:hover { background: #c42b1c; }
     body.error pre { display: block; }
   </style>
 </head>
 <body>
+  <div class="titlebar" data-tauri-drag-region>
+    <button type="button" aria-label="Minimize" onclick="win('minimize')">&#x2013;</button>
+    <button type="button" class="close" aria-label="Close" onclick="win('close')">&#x2715;</button>
+  </div>
   <main>
     <img src="logo.svg" alt="">
     <h1 id="title">Starting GitNut</h1>
@@ -30,7 +40,10 @@
     <pre id="detail"></pre>
   </main>
   <script>
-    // Called from Rust through webview.eval (this page has no IPC).
+    const ipc = window.__TAURI_INTERNALS__;
+    const win = (cmd) => ipc && ipc.invoke(`plugin:window|${cmd}`, { label: "main" });
+    if (ipc && /Windows/i.test(navigator.userAgent)) document.body.classList.add("win");
+    // Called from Rust through webview.eval.
     window.gitnutStatus = (text) => { document.getElementById("status").textContent = text; };
     window.gitnutError = (text, detail) => {
       document.body.classList.add("error");

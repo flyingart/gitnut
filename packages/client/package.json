@@ -1,6 +1,6 @@
 {
   "name": "@gitnut/client",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "Embeddable React components for gitnut: commit graph, changes tree, IntelliJ-style diff.",
   "type": "module",

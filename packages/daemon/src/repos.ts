@@ -104,13 +104,19 @@ interface WorktreeListEntry {
   prunable: boolean;
 }
 
+/**
+ * `git worktree list --porcelain`: blocks separated by an empty line. Without `-z` on purpose: it
+ * needs git 2.36, and older git (common on Windows) rejects it. NUL-separated output parses too.
+ */
 export function parseWorktreeList(out: string): WorktreeListEntry[] {
   return out
-    .split("\0\0")
+    .replace(/\r\n/g, "\n")
+    .replace(/\0/g, "\n")
+    .split("\n\n")
     .filter((b) => b.trim())
     .map((block) => {
       const e: WorktreeListEntry = { path: "", head: null, branch: null, bare: false, prunable: false };
-      for (const line of block.split("\0")) {
+      for (const line of block.split("\n")) {
         const [k, ...rest] = line.split(" ");
         const v = rest.join(" ");
         if (k === "worktree") e.path = v;
@@ -123,7 +129,7 @@ export function parseWorktreeList(out: string): WorktreeListEntry[] {
     });
 }
 
-export const listWorktrees = async (cwd: string) => parseWorktreeList(await git(cwd, ["worktree", "list", "--porcelain", "-z"]));
+export const listWorktrees = async (cwd: string) => parseWorktreeList(await git(cwd, ["worktree", "list", "--porcelain"]));
 
 /** Find all repositories from settings, worktrees grouped under their main repo. */
 export async function discover(s: Settings): Promise<Repo[]> {
@@ -133,9 +139,11 @@ export async function discover(s: Settings): Promise<Repo[]> {
   const byCommon = new Map<string, string>();
   await Promise.all(
     candidates.map(async (c) => {
-      const out = await git(c, ["rev-parse", "--path-format=absolute", "--git-common-dir"]).catch(() => null);
+      // relative to c when inside the main worktree (`--path-format=absolute` needs git 2.31)
+      const out = await git(c, ["rev-parse", "--git-common-dir"]).catch(() => null);
       if (!out) return;
-      const common = await realpath(out.trim()).catch(() => out.trim());
+      const abs = resolve(c, out.trim());
+      const common = await realpath(abs).catch(() => abs);
       if (!byCommon.has(common)) byCommon.set(common, c);
     }),
   );

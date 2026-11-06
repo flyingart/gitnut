@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Box, Minus, Square, FolderPlus, GitBranch, Keyboard, Layers, List, ListTree, PanelLeft, Plus, Server, Settings, X } from "lucide-react";
+import { Box, Copy, Minus, Square, FolderPlus, GitBranch, Keyboard, Layers, List, ListTree, PanelLeft, Plus, Server, Settings, X } from "lucide-react";
 import type { RepoSummary } from "@gitnut/commons";
 import { AddProjectsDialog } from "./AddProjectsDialog";
 import { AddServerDialog } from "./AddServerDialog";
@@ -18,7 +18,7 @@ import { ServersPanel } from "./ServersPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { Shortcuts } from "./Shortcuts";
 import { accentTheme } from "./theme";
-import { desktopWindow, dragRegion, useDesktopVersion } from "./desktop";
+import { desktopWindow, dragRegion, useDesktopVersion, useWindowMaximized } from "./desktop";
 import { CLIENT_VERSION } from "./version";
 import { UpdateButton } from "./UpdateButton";
 import { Button, Dialog, Empty, IconButton, Menu, MenuButton, Popover, useContextMenu, worktreeLabel } from "./ui";
@@ -353,14 +353,15 @@ function AppInner(props: GitnutAppProps) {
 
 /** Minimize / maximize / close for the app's own title bar (Windows, see desktop.ts). */
 function WindowControls() {
+  const maximized = useWindowMaximized();
   if (!desktopWindow) return null;
   return (
     <div className="gitnut-window-controls">
       <button type="button" aria-label="Minimize" title="Minimize" onClick={() => void desktopWindow?.minimize()}>
         <Minus size={14} />
       </button>
-      <button type="button" aria-label="Maximize" title="Maximize" onClick={() => void desktopWindow?.toggleMaximize()}>
-        <Square size={11} />
+      <button type="button" aria-label={maximized ? "Restore" : "Maximize"} title={maximized ? "Restore" : "Maximize"} onClick={() => void desktopWindow?.toggleMaximize()}>
+        {maximized ? <Copy size={11} /> : <Square size={11} />}
       </button>
       <button type="button" className="gitnut-window-close" aria-label="Close" title="Close" onClick={() => void desktopWindow?.close()}>
         <X size={15} />

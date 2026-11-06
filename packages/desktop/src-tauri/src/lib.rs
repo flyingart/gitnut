@@ -231,7 +231,8 @@ fn grant_daemon_page(window: &WebviewWindow, url: &Url) -> Result<(), String> {
         .permission("core:window:allow-start-dragging")
         .permission("core:window:allow-minimize")
         .permission("core:window:allow-toggle-maximize")
-        .permission("core:window:allow-close");
+        .permission("core:window:allow-close")
+        .permission("core:window:allow-is-maximized");
     window.app_handle().add_capability(cap).map_err(|e| e.to_string())
 }
 
@@ -312,6 +313,10 @@ pub fn run() {
         })
         .setup(|app| {
             let window = app.get_webview_window("main").expect("main window");
+            // Windows: the app draws its own title bar. Set here, not only in tauri.windows.conf.json:
+            // the platform config isn't merged when the Windows installer is cross-built on a Mac.
+            #[cfg(windows)]
+            let _ = window.set_decorations(false);
             std::thread::spawn(move || match start(&window) {
                 Ok(url) => {
                     if let Err(e) = grant_daemon_page(&window, &url) {

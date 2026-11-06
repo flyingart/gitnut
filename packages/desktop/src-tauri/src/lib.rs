@@ -217,6 +217,18 @@ fn start(window: &WebviewWindow) -> Result<Url, (String, String)> {
     Ok(url)
 }
 
+/// Let the daemon's page (exactly this scheme://host:port) call the app's update commands, and nothing else.
+fn grant_daemon_page(window: &WebviewWindow, url: &Url) -> Result<(), String> {
+    let origin = url.origin().ascii_serialization();
+    let cap = tauri::ipc::CapabilityBuilder::new("daemon-page")
+        .window("main")
+        .remote(format!("{origin}/*"))
+        .permission("allow-desktop-version")
+        .permission("allow-desktop-update-check")
+        .permission("allow-desktop-update-install");
+    window.app_handle().add_capability(cap).map_err(|e| e.to_string())
+}
+
 fn js_str(s: &str) -> String {
     serde_json::to_string(s).unwrap_or_else(|_| "\"\"".into())
 }
@@ -296,6 +308,9 @@ pub fn run() {
             let window = app.get_webview_window("main").expect("main window");
             std::thread::spawn(move || match start(&window) {
                 Ok(url) => {
+                    if let Err(e) = grant_daemon_page(&window, &url) {
+                        eprintln!("gitnut-desktop: update commands unavailable: {e}");
+                    }
                     if let Err(e) = window.navigate(url) {
                         *LAST_ERROR.lock().unwrap() = Some(("Could not open the web client.".into(), e.to_string()));
                         show_error(&window);

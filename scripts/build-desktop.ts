@@ -90,7 +90,10 @@ async function main() {
   // 2. Tauri bundles
   // macOS: the "app" bundle is where Tauri makes the updater's .app.tar.gz
   const bundles = [...new Set([...(platform.startsWith("darwin") && updater ? ["app"] : []), ...assets.map((a) => a.bundle)])].join(",");
-  const config = updater ? { version } : { version, bundle: { createUpdaterArtifacts: false } };
+  // the app looks for its updates on the same site the daemon was built for (GITNUT_SITE_URL)
+  const site = process.env.GITNUT_SITE_URL?.replace(/\/+$/, "");
+  if (updater && !site) throw new Error("set GITNUT_SITE_URL (in .env): the app needs to know where its updates come from");
+  const config = updater ? { version, plugins: { updater: { endpoints: [`${site}/desktop/latest.json`] } } } : { version, bundle: { createUpdaterArtifacts: false } };
   const tauri = ["bunx", "tauri", "build", "--bundles", bundles, "--config", JSON.stringify(config)];
   if (values.target) tauri.push("--target", triple);
   // Windows installer from macOS / Linux: Tauri's NSIS cross-build (cargo install cargo-xwin; brew install nsis llvm).

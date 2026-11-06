@@ -20,11 +20,10 @@ const files = Bun.serve({
     return new Response("not found", { status: 404 });
   },
 });
-const site = Bun.serve({
-  port: 0,
-  hostname: "127.0.0.1",
-  // GitHub API stand-in: one release whose files live on the fake host above
-  fetch: createSite({ GITNUT_GITHUB_REPO: "o/r" }, ((url: string) =>
+let handle: (req: Request) => Promise<Response>;
+const site = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: (req) => handle(req) });
+// GitHub API stand-in: one release whose files live on the fake host above
+handle = createSite({ GITNUT_GITHUB_REPO: "o/r", GITNUT_SITE_URL: `http://127.0.0.1:${site.port}` }, ((url: string) =>
     String(url).includes("api.github.com/repos/")
       ? Promise.resolve(
           Response.json([
@@ -43,8 +42,7 @@ const site = Bun.serve({
             },
           ]),
         )
-      : fetch(url)) as unknown as typeof fetch),
-});
+      : fetch(url)) as unknown as typeof fetch);
 const tmp = mkdtempSync(join(tmpdir(), "gitnut-install-"));
 afterAll(() => {
   files.stop(true);

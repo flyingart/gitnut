@@ -197,10 +197,13 @@ describe("site", () => {
     }
   });
 
-  test("R-SITE-2: site URL falls back to forwarded headers", async () => {
-    const h = createSite({ GITNUT_GITHUB_REPO: "o/r" }, (async () => Response.json([RELEASE])) as unknown as typeof fetch);
-    const res = await h(new Request("http://10.0.0.5:7431/install.sh", { headers: { "x-forwarded-proto": "https", "x-forwarded-host": "get.gitnut.dev" } }));
-    expect(await res.text()).toContain("irm https://get.gitnut.dev/install.ps1 | iex");
+  test("R-SITE-2: forwarded host headers never change the public URL (cache poisoning)", async () => {
+    const h = createSite({ GITNUT_GITHUB_REPO: "o/r", GITNUT_SITE_URL: "https://gitnut.example.com" }, (async () => Response.json([RELEASE])) as unknown as typeof fetch);
+    const res = await h(new Request("http://10.0.0.5:7431/install.sh", { headers: { "x-forwarded-proto": "https", "x-forwarded-host": "evil.example", host: "evil.example" } }));
+    const sh = await res.text();
+    expect(sh).toContain("https://gitnut.example.com/install.ps1");
+    expect(sh).not.toContain("evil.example");
+    expect((await h(new Request("http://site/%E0%A4%A"))).status).toBe(400);
   });
 
   test("R-SITE-1: landing page, static files and healthz", async () => {

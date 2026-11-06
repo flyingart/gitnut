@@ -56,6 +56,8 @@ export function createSite(env: Record<string, string | undefined> = process.env
   } else console.error("site: GITNUT_GITHUB_REPO is not set, no releases to offer");
   // Only http(s) links: the page puts these into hrefs.
   const link = (v?: string) => (/^https?:\/\//i.test(v?.trim() ?? "") ? v!.trim() : undefined);
+  // The public URL comes only from GITNUT_SITE_URL, never from Host / X-Forwarded-* headers: it goes
+  // into install scripts, the manifest and redirects, which a shared cache could otherwise poison.
   const canonical = env.GITNUT_SITE_URL?.trim().replace(/\/+$/, "") || "https://gitnut.dev";
   const sponsors = { github: link(env.GITNUT_SPONSOR_GITHUB), kofi: link(env.GITNUT_SPONSOR_KOFI), paypal: link(env.GITNUT_SPONSOR_PAYPAL) };
 
@@ -77,13 +79,6 @@ export function createSite(env: Record<string, string | undefined> = process.env
     return p;
   }
 
-  function siteUrl(req: Request): string {
-    if (env.GITNUT_SITE_URL) return env.GITNUT_SITE_URL.replace(/\/+$/, "");
-    const u = new URL(req.url);
-    const proto = req.headers.get("x-forwarded-proto") ?? u.protocol.replace(":", "");
-    const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? u.host;
-    return `${proto}://${host}`;
-  }
 
   const noRelease = () => Response.json({ error: "no release published yet" }, { status: 503 });
 
@@ -91,8 +86,8 @@ export function createSite(env: Record<string, string | undefined> = process.env
     const latest = releases[0];
     if (!latest) return noRelease();
     const text = (await Bun.file(join(DIST, name)).text())
-      .replaceAll("__GITNUT_SITE_URL__", siteUrl(req))
-      .replaceAll("__GITNUT_DOWNLOAD_BASE__", `${siteUrl(req)}/releases`)
+      .replaceAll("__GITNUT_SITE_URL__", canonical)
+      .replaceAll("__GITNUT_DOWNLOAD_BASE__", `${canonical}/releases`)
       .replaceAll("__GITNUT_VERSION__", latest.version);
     return new Response(text, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-cache" } });
   }
@@ -100,9 +95,14 @@ export function createSite(env: Record<string, string | undefined> = process.env
   return async function handle(req: Request): Promise<Response> {
     const { pathname } = new URL(req.url);
     if (req.method !== "GET" && req.method !== "HEAD") return new Response("method not allowed", { status: 405 });
+    try {
+      decodeURIComponent(pathname);
+    } catch {
+      return new Response("bad request", { status: 400 });
+    }
     await ready;
     const latest = releases[0];
-    const base = `${siteUrl(req)}/releases`;
+    const base = `${canonical}/releases`;
 
     if (pathname === "/healthz") return new Response("ok");
     if (pathname === "/site.json") return Response.json({ sponsors }, { headers: { "cache-control": "no-cache" } });
@@ -114,7 +114,7 @@ export function createSite(env: Record<string, string | undefined> = process.env
         base,
         notes: latest.summary || undefined,
         publishedAt: latest.publishedAt,
-        downloadPage: siteUrl(req),
+        downloadPage: canonical,
         sha256s: sums ? parseSha256Sums(sums) : undefined,
       });
       return Response.json(manifest, { headers: { "cache-control": "public, max-age=60", "access-control-allow-origin": "*" } });
@@ -178,6 +178,7 @@ export function createSite(env: Record<string, string | undefined> = process.env
 }
 
 if (import.meta.main) {
+  if (!process.env.GITNUT_SITE_URL) console.error("site: GITNUT_SITE_URL is not set, using https://gitnut.dev for links and downloads");
   const server = Bun.serve({
     port: Number(process.env.PORT ?? 7431),
     hostname: process.env.HOST ?? "0.0.0.0",

@@ -19,6 +19,7 @@ import { applyPatch, homeDir, loadConfig, saveConfig, type Config } from "./conf
 import { GitnutError, fail } from "./errors";
 import { GraphCache } from "./graph";
 import { Live, eventMessage } from "./live";
+import { git } from "./git";
 import { authCookie, authorize, isHttps, tokenEquals, originAllowed } from "./auth";
 import { localHost, resolveBind, urlHost } from "./net";
 import { RepoIndex } from "./repos";
@@ -55,6 +56,14 @@ export interface DaemonFile {
   version: string;
 }
 export const daemonFile = (home: string) => join(home, "daemon.json");
+
+/** GitNut needs git 2.24+ (`--end-of-options`, `git switch`, `git restore`): say so clearly at start. */
+async function checkGitVersion(log: (m: string) => void) {
+  const out = await git(process.cwd(), ["--version"]).catch(() => "");
+  const m = /(\d+)\.(\d+)/.exec(out);
+  if (!m) log("warning: git was not found on PATH: install git 2.24 or newer, repositories can't be read without it");
+  else if (Number(m[1]) < 2 || (Number(m[1]) === 2 && Number(m[2]) < 24)) log(`warning: ${out.trim()} is too old, GitNut needs git 2.24 or newer`);
+}
 
 export class Daemon {
   readonly home: string;
@@ -114,6 +123,7 @@ export class Daemon {
       fail("bad_request", `auth is off on the public bind "${s.bind}". Pass --force to allow it.`);
     }
     cleanupOldBinary();
+    void checkGitVersion(this.log);
     this.web = await loadWebAssets();
     await this.listenWithRetry();
     this.live.start(s.pollIntervalMs);

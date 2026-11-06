@@ -68,7 +68,8 @@ source), in a modern dark glass UI.
 
 ## Quick start
 
-On every machine whose repositories you want to see:
+Needs `git` 2.24 or newer on each machine (macOS, Linux, Windows). On every machine whose repositories
+you want to see:
 
 ```sh
 curl -fsSL https://gitnut.dev/install.sh | sh     # Linux / macOS

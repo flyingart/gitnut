@@ -32,7 +32,7 @@ interface RefsState {
 export async function refsState(repo: Repo, hideInternal = false): Promise<RefsState> {
   const [allRefs, worktreesOut] = await Promise.all([
     git(repo.path, ["for-each-ref", "--format=%(refname)%00%(objectname)%00%(*objectname)%00%(symref)"]),
-    git(repo.path, ["worktree", "list", "--porcelain", "-z"]),
+    git(repo.path, ["worktree", "list", "--porcelain"]),
   ]);
   const hidden = new Set(["refs/stash", "refs/notes/*"]);
   let refsOut = allRefs;

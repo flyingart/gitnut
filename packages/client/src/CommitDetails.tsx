@@ -5,7 +5,7 @@ import { useGraphSnapshot } from "./hooks";
 import { useConnection, type ServerProp } from "./provider";
 import { GitnutRoot, useCx, type StyleProps } from "./root";
 import { RefPills } from "./graph/refs";
-import { copyText, Empty, formatFullDate, IconButton, Spinner } from "./ui";
+import { Button, copyText, Empty, formatFullDate, IconButton, Loading, shortHash } from "./ui";
 
 /** Props of {@link CommitDetails}. */
 export interface CommitDetailsProps extends StyleProps {
@@ -49,7 +49,7 @@ export function CommitDetails(props: CommitDetailsProps) {
 
   let body: ReactNode;
   if (!props.hashes.length) body = <Empty icon={<GitCommitHorizontal size={22} />} title="Select a commit" />;
-  else if (!commits) body = <div className="gitnut-center"><Spinner /></div>;
+  else if (!commits) body = <Loading />;
   else if (!commits.length) body = <Empty title="Couldn't load the commit" />;
   else if (commits.length === 1) {
     const c = commits[0];
@@ -84,9 +84,9 @@ export function CommitDetails(props: CommitDetailsProps) {
           <dt>{c.parents.length === 1 ? "Parent" : "Parents"}</dt>
           <dd className="gitnut-mono">
             {c.parents.length ? c.parents.map((p) => (
-              <button key={p} type="button" className="gitnut-link" onClick={() => props.onNavigate?.(p)}>
-                {p.slice(0, 8)}
-              </button>
+              <Button key={p} variant="link" onClick={() => props.onNavigate?.(p)}>
+                {shortHash(p)}
+              </Button>
             )) : <span className="gitnut-muted">none (root commit)</span>}
           </dd>
         </dl>
@@ -104,7 +104,7 @@ export function CommitDetails(props: CommitDetailsProps) {
         <ul className="gitnut-details-list">
           {commits.map((c) => (
             <li key={c.hash}>
-              <span className="gitnut-mono gitnut-muted">{c.hash.slice(0, 8)}</span>
+              <span className="gitnut-mono gitnut-muted">{shortHash(c.hash)}</span>
               <span className="gitnut-details-list-subject">{c.subject}</span>
               <span className="gitnut-muted">{c.authorName}</span>
             </li>

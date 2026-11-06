@@ -196,6 +196,14 @@
 .gitnut-btn-icon.gitnut-btn-sm {
   width: var(--gitnut-control-height-sm);
 }
+/* a bare icon inside a row or field */
+.gitnut-btn-xs {
+  width: auto;
+  height: auto;
+  padding: 2px;
+  border: 0;
+  border-radius: 3px;
+}
 .gitnut-btn-ghost {
   background: transparent;
   border-color: transparent;
@@ -323,13 +331,8 @@ select.gitnut-input {
   font-size: var(--gitnut-font-size-sm);
 }
 .gitnut-search-clear {
-  display: inline-flex;
-  padding: 2px;
-  border: 0;
   border-radius: 50%;
   background: var(--gitnut-hover);
-  color: var(--gitnut-muted-text);
-  cursor: pointer;
 }
 .gitnut-checkbox {
   display: inline-flex;
@@ -1192,14 +1195,7 @@ select.gitnut-input {
 }
 .gitnut-refs-filter {
   margin-left: auto;
-  display: inline-flex;
-  padding: 2px;
-  border: 0;
-  border-radius: 3px;
-  background: transparent;
-  color: var(--gitnut-muted-text);
   opacity: 0;
-  cursor: pointer;
 }
 .gitnut-refs-row:hover .gitnut-refs-filter,
 .gitnut-refs-row.gitnut-selected .gitnut-refs-filter {
@@ -1748,22 +1744,13 @@ select.gitnut-input {
   font-size: var(--gitnut-font-size-xs);
 }
 .gitnut-tab-close {
-  display: inline-flex;
   padding: 3px;
-  border: 0;
   border-radius: 4px;
-  background: transparent;
-  color: var(--gitnut-muted-text);
   opacity: 0;
-  cursor: pointer;
 }
 .gitnut-tab:hover .gitnut-tab-close,
 .gitnut-tab.gitnut-active .gitnut-tab-close {
   opacity: 1;
-}
-.gitnut-tab-close:hover {
-  background: var(--gitnut-hover);
-  color: var(--gitnut-text);
 }
 .gitnut-main-body {
   position: relative;

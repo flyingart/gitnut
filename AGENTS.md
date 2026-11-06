@@ -23,7 +23,7 @@ Read this file before you change anything. `CLAUDE.md` only points here.
 | `packages/web` | Vite app that renders `GitnutApp`; embedded into the daemon binary. |
 | `packages/desktop` | Tauri v2 shell that starts the daemon sidecar. |
 | `packages/site` | gitnut.dev: Astro static pages (`src/`, one `BaseLayout`), plain CSS/JS in `public/`, plus a small Bun server (`server/`: serves `dist/`, manifest, installers, GitHub releases). |
-| `scripts/` | build-daemon, build-desktop (+ mac-signing), release, screenshots, dev. |
+| `scripts/` | build-daemon, build-desktop (+ mac-signing), release, screenshots, dev; shared helpers (`run`, `has`, `ask`, `confirm`, `requireSiteUrl`) in `lib.ts`. |
 
 ## Commands
 
@@ -41,8 +41,9 @@ daemon build. `main` is protected: work on a branch, open a PR, wait for green C
 
 - **Simplest thing that works.** Reuse what exists before adding code. No new dependency for
   what a few lines do. No abstractions with one user.
-- **One implementation per thing.** UI primitives live in `client/src/ui.tsx` (Button, IconButton,
-  Dialog, Popover, ContextMenu, Segmented, Empty, formatSize, ...) and `client/src/form.tsx` (Section,
+- **One implementation per thing.** UI primitives live in `client/src/ui.tsx` (Button incl. `variant="link"`,
+  IconButton, Dialog, Popover, Menu, ContextMenu, SearchInput, Loading, Segmented, Empty, formatSize,
+  shortHash, worktreeLabel, worktreeFolder, ...) and `client/src/form.tsx` (Section,
   Field, FieldRow, Checkbox). Settings screens and dialogs are built from them. Don't hand-roll a
   second version.
 - **Every visible part is an exported, standalone component** with `theme`, `className` /

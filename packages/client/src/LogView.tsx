@@ -13,7 +13,7 @@ import { RefsList } from "./RefsList";
 import { GitnutRoot, useCx, type StyleProps } from "./root";
 import { Split } from "./Split";
 import { buildChangesTree, changesFromList, filesOf, type ChangeItem } from "./tree";
-import { Button, IconButton } from "./ui";
+import { Button, IconButton, shortHash } from "./ui";
 import { useViewOptions } from "./viewOptions";
 
 /** Props of {@link LogView}. */
@@ -176,7 +176,7 @@ export function LogView(props: LogViewProps) {
         {full && (
           <div className="gitnut-full-diff gitnut-glass" role="dialog" aria-label="Changes" onKeyDown={(e) => e.key === "Escape" && setFull(false)}>
             <div className={cx("toolbar", "gitnut-toolbar")}>
-              <span className="gitnut-strong">{hashes.length === 1 ? `Changes in ${hashes[0].slice(0, 8)}` : `Changes in ${hashes.length} commits`}</span>
+              <span className="gitnut-strong">{hashes.length === 1 ? `Changes in ${shortHash(hashes[0])}` : `Changes in ${hashes.length} commits`}</span>
               <span className="gitnut-toolbar-spacer" />
               <IconButton title="Close (Esc)" icon={<X size={14} />} onClick={() => setFull(false)} />
             </div>

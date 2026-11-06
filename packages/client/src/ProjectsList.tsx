@@ -1,13 +1,13 @@
 import { useMemo, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
-import { ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpFromLine, Box, ChevronDown, ChevronRight, EyeOff, FileDiff, FolderPlus, GitBranch, KeyRound, RefreshCw, Search } from "lucide-react";
+import { ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpFromLine, Box, ChevronDown, ChevronRight, EyeOff, FileDiff, FolderPlus, GitBranch, KeyRound, RefreshCw } from "lucide-react";
 import type { RepoSummary, WorktreeSummary } from "@gitnut/commons";
 import { repoMenuItems, useGitAction } from "./actions";
 import type { GitnutConnection } from "./connection";
 import { useReposOf } from "./hooks";
-import { totalCount, worktreeLabel } from "./LocalChanges";
+import { totalCount } from "./LocalChanges";
 import { resolveConnection, useServers, type ServerProp } from "./provider";
 import { GitnutRoot, useCx, type StyleProps } from "./root";
-import { IconButton, isMenuKey, menuPointOf, Spinner, useContextMenu, type MenuItem } from "./ui";
+import { Button, IconButton, isMenuKey, menuPointOf, SearchInput, Spinner, useContextMenu, worktreeFolder, worktreeLabel, type MenuItem } from "./ui";
 import { useViewOptions } from "./viewOptions";
 
 /** What is selected in the projects list. */
@@ -126,7 +126,7 @@ export function ProjectsList(props: ProjectsListProps) {
       >
         <GitBranch size={12} className="gitnut-muted" />
         <span className="gitnut-proj-name">{worktreeLabel(wt)}</span>
-        {!wt.isMain && <span className="gitnut-tree-hint">{wt.path.split("/").pop()}</span>}
+        {!wt.isMain && <span className="gitnut-tree-hint">{worktreeFolder(wt.path)}</span>}
         <span className="gitnut-toolbar-spacer" />
         {wt.ahead > 0 && <span className="gitnut-ab" title={`${wt.ahead} ahead`}><ArrowUp size={10} />{wt.ahead}</span>}
         {wt.behind > 0 && <span className="gitnut-ab" title={`${wt.behind} behind`}><ArrowDown size={10} />{wt.behind}</span>}
@@ -210,16 +210,16 @@ export function ProjectsList(props: ProjectsListProps) {
         <span className="gitnut-tree-count">{count || ""}</span>
         <span className="gitnut-toolbar-spacer" />
         {conn.state === "unauthorized" && (
-          <button
-            type="button"
-            className="gitnut-link"
+          <Button
+            variant="link"
+            icon={<KeyRound size={11} />}
             onClick={(e) => {
               e.stopPropagation();
               props.onLogin?.(conn);
             }}
           >
-            <KeyRound size={11} /> Log in
-          </button>
+            Log in
+          </Button>
         )}
         {conn.state === "open" && count > 0 && (
           <IconButton
@@ -270,7 +270,7 @@ export function ProjectsList(props: ProjectsListProps) {
             ) : c.state === "open" && !repos.length ? (
               <div className="gitnut-proj-empty">
                 {q ? "No match" : props.onAddProjects ? (
-                  <>No repositories yet. <button type="button" className="gitnut-link" onClick={() => props.onAddProjects?.(c)}>Add projects</button></>
+                  <>No repositories yet. <Button variant="link" onClick={() => props.onAddProjects?.(c)}>Add projects</Button></>
                 ) : (
                   <>No repositories yet. Run <code>gitnut repos add</code> or <code>gitnut roots add</code>.</>
                 )}
@@ -287,10 +287,7 @@ export function ProjectsList(props: ProjectsListProps) {
     <GitnutRoot component="projects" theme={props.theme} className={props.className} classNames={props.classNames} style={props.style}>
       {props.showSearch !== false && (
         <div className="gitnut-proj-search">
-          <label className={cx("input", "gitnut-search")}>
-            <Search size={13} className="gitnut-muted" />
-            <input placeholder="Search projects" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search projects" />
-          </label>
+          <SearchInput placeholder="Search projects" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search projects" />
         </div>
       )}
       <div className={cx("tree", "gitnut-proj-tree", "gitnut-scroll")} role="tree" aria-label="Projects" data-grouping={options.projectsGrouping}>

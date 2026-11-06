@@ -21,7 +21,7 @@ import { accentTheme } from "./theme";
 import { useDesktopVersion } from "./desktop";
 import { CLIENT_VERSION } from "./version";
 import { UpdateButton } from "./UpdateButton";
-import { Dialog, Empty, IconButton, Popover, useContextMenu } from "./ui";
+import { Button, Dialog, Empty, IconButton, Menu, MenuButton, Popover, useContextMenu, worktreeLabel } from "./ui";
 import { useViewOptions, type ViewOptions } from "./viewOptions";
 
 export type AppView = "log" | "changes" | "all-changes";
@@ -142,12 +142,12 @@ function AppInner(props: GitnutAppProps) {
       for (const repo of repoStates[i]?.data ?? []) {
         const wt = props.worktree ? repo.worktrees.find((w) => w.id === props.worktree || w.path === props.worktree?.replace(/\/+$/, "")) : undefined;
         if (props.worktree && wt) {
-          openTab({ kind: props.view === "log" ? "log" : "changes", server: conns[i].url, repoId: repo.id, worktreeId: wt.id, title: props.view === "log" ? repo.name : `${repo.name}: ${wt.branch ?? "detached"}` });
+          openTab({ kind: props.view === "log" ? "log" : "changes", server: conns[i].url, repoId: repo.id, worktreeId: wt.id, title: props.view === "log" ? repo.name : `${repo.name}: ${worktreeLabel(wt)}` });
           return setApplied(true);
         }
         if (!props.worktree && props.repo && [repo.id, repo.path, repo.name].includes(props.repo)) {
           const main = repo.worktrees.find((w) => w.isMain) ?? repo.worktrees[0];
-          if (props.view === "changes" && main) openTab({ kind: "changes", server: conns[i].url, repoId: repo.id, worktreeId: main.id, title: `${repo.name}: ${main.branch ?? "detached"}` });
+          if (props.view === "changes" && main) openTab({ kind: "changes", server: conns[i].url, repoId: repo.id, worktreeId: main.id, title: `${repo.name}: ${worktreeLabel(main)}` });
           else openTab({ kind: "log", server: conns[i].url, repoId: repo.id, title: repo.name });
           return setApplied(true);
         }
@@ -202,18 +202,18 @@ function AppInner(props: GitnutAppProps) {
                 )}
                 <Popover title="Add projects or a server" icon={<Plus size={14} />} align="right">
                   {(close) => (
-                    <div className="gitnut-menu">
+                    <Menu>
                       {conns
                         .filter((c) => c.state === "open")
                         .map((c) => (
-                          <button key={c.url} type="button" className="gitnut-menu-item" onClick={() => (close(), setDialog({ addProjects: c.url }))}>
-                            <FolderPlus size={13} /> Add projects{conns.length > 1 ? ` on ${c.name}` : ""}…
-                          </button>
+                          <MenuButton key={c.url} icon={<FolderPlus size={13} />} onClick={() => (close(), setDialog({ addProjects: c.url }))}>
+                            Add projects{conns.length > 1 ? ` on ${c.name}` : ""}…
+                          </MenuButton>
                         ))}
-                      <button type="button" className="gitnut-menu-item" onClick={() => (close(), setDialog("add"))}>
-                        <Server size={13} /> Add server…
-                      </button>
-                    </div>
+                      <MenuButton icon={<Server size={13} />} onClick={() => (close(), setDialog("add"))}>
+                        Add server…
+                      </MenuButton>
+                    </Menu>
                   )}
                 </Popover>
               </div>
@@ -224,7 +224,7 @@ function AppInner(props: GitnutAppProps) {
                 className="gitnut-fill"
                 selected={selection}
                 onSelectRepo={(sel, repo) => openTab({ kind: "log", server: sel.server, repoId: repo.id, title: repo.name })}
-                onSelectWorktree={(sel, wt, repo) => openTab({ kind: "changes", server: sel.server, repoId: repo.id, worktreeId: wt.id, title: `${repo.name}: ${wt.branch ?? "detached"}` })}
+                onSelectWorktree={(sel, wt, repo) => openTab({ kind: "changes", server: sel.server, repoId: repo.id, worktreeId: wt.id, title: `${repo.name}: ${worktreeLabel(wt)}` })}
                 onLogin={(conn) => setDialog({ login: conn })}
                 onAddProjects={(conn) => setDialog({ addProjects: conn.url })}
                 onRemoveRepo
@@ -266,17 +266,16 @@ function AppInner(props: GitnutAppProps) {
                   {t.kind === "log" ? <Box size={12} /> : t.kind === "changes" ? <GitBranch size={12} /> : <Layers size={12} />}
                   <span>{t.title}</span>
                   {t.kind === "log" && <span className="gitnut-tab-kind">Log</span>}
-                  <button
-                    type="button"
+                  <IconButton
+                    size="xs"
                     className="gitnut-tab-close"
-                    aria-label={`Close ${t.title}`}
+                    title={`Close ${t.title}`}
+                    icon={<X size={11} />}
                     onClick={(e) => {
                       e.stopPropagation();
                       closeTab(t.id);
                     }}
-                  >
-                    <X size={11} />
-                  </button>
+                  />
                 </div>
               ))}
             </div>
@@ -300,9 +299,9 @@ function AppInner(props: GitnutAppProps) {
                   worktreeId={active.worktreeId}
                   mode={props.options?.changesMode}
                   headerExtra={
-                    <button type="button" className="gitnut-link" onClick={() => active.repoId && openTab({ kind: "log", server: active.server, repoId: active.repoId, title: findRepo(active.server, active.repoId)?.name ?? "Log" })}>
+                    <Button variant="link" onClick={() => active.repoId && openTab({ kind: "log", server: active.server, repoId: active.repoId, title: findRepo(active.server, active.repoId)?.name ?? "Log" })}>
                       Show log
-                    </button>
+                    </Button>
                   }
                 />
               ) : (
@@ -384,9 +383,9 @@ function Welcome({ repos, hasServers, onAdd, onAddProjects }: { repos: RepoSumma
     return (
       <Empty icon={<Logo size={40} />} title="Connect a daemon">
         Run <code>gitnut serve</code> on a machine, then{" "}
-        <button type="button" className="gitnut-link" onClick={onAdd}>
+        <Button variant="link" onClick={onAdd}>
           add it as a server
-        </button>
+        </Button>
         .
       </Empty>
     );
@@ -397,9 +396,9 @@ function Welcome({ repos, hasServers, onAdd, onAddProjects }: { repos: RepoSumma
       ) : (
         <>
           No projects yet.{" "}
-          <button type="button" className="gitnut-link" onClick={onAddProjects}>
+          <Button variant="link" onClick={onAddProjects}>
             Add projects
-          </button>{" "}
+          </Button>{" "}
           one by one or watch a whole folder.
         </>
       )}

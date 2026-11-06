@@ -4,10 +4,9 @@
 //                                   [--version X] [--no-web] [--build-web] [--web-dir DIR]
 // Embeds packages/web/dist (when present) through a generated module of `type: "file"` imports,
 // so the binary serves the web client with its original relative paths.
-// Bakes in version and the update source with --define: GITNUT_SITE_URL (the website, gives
-// <site>/manifest.json and <site>/releases), or GITNUT_MANIFEST_URL / GITNUT_DOWNLOAD_BASE_URL.
-// One of them is required (put it in .env, Bun loads it) so every shipped binary can update;
-// --dev builds without one (updates off).
+// Bakes in version and GITNUT_SITE_URL (the website: updates come from <site>/manifest.json) with
+// --define. GITNUT_SITE_URL is required (put it in .env, Bun loads it) so every shipped binary can
+// update; --dev builds without it (updates off).
 import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { parseArgs } from "node:util";
@@ -29,11 +28,9 @@ const { values } = parseArgs({
   },
 });
 
-const site = process.env.GITNUT_SITE_URL?.replace(/\/+$/, "");
-const manifestUrl = process.env.GITNUT_MANIFEST_URL || (site ? `${site}/manifest.json` : "");
-const downloadBase = process.env.GITNUT_DOWNLOAD_BASE_URL || (site ? `${site}/releases` : "");
-if (!manifestUrl && !values.dev) {
-  console.error("Set GITNUT_SITE_URL (or GITNUT_MANIFEST_URL) in the environment or .env, so the binary knows where updates come from.\nFor a local build without updates add --dev.");
+const site = process.env.GITNUT_SITE_URL?.replace(/\/+$/, "") ?? "";
+if (!site && !values.dev) {
+  console.error("Set GITNUT_SITE_URL in the environment or .env, so the binary knows where updates come from.\nFor a local build without updates add --dev.");
   process.exit(1);
 }
 
@@ -87,8 +84,7 @@ for (const t of targets) {
     "--minify",
     `--target=bun-${t}`,
     ...define("GITNUT_VERSION", version),
-    ...define("GITNUT_MANIFEST_URL", manifestUrl),
-    ...define("GITNUT_DOWNLOAD_BASE_URL", downloadBase),
+    ...define("GITNUT_SITE_URL", site),
     join(DAEMON, "src", "cli.ts"),
     "--outfile",
     file,

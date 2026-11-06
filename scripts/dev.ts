@@ -29,8 +29,8 @@ procs.push({
   cmd: ["bun", "--watch", "packages/site/src/server.ts"],
   env: {
     PORT: SITE_PORT,
-    GITNUT_LATEST_VERSION: process.env.GITNUT_LATEST_VERSION ?? "0.0.0-dev",
-    GITNUT_DOWNLOAD_BASE_URL: process.env.GITNUT_DOWNLOAD_BASE_URL ?? `http://${HOST}:${SITE_PORT}/releases`,
+    // releases (versions, downloads, changelog) come from GitHub, like in production
+    GITNUT_GITHUB_REPO: process.env.GITNUT_GITHUB_REPO ?? "flyingart/gitnut",
   },
 });
 urls.push(`site                  http://${HOST}:${SITE_PORT}`);

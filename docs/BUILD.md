@@ -9,7 +9,7 @@ GitNut ships as one binary per platform (`gitnut`, daemon and CLI in one), deskt
 | Web client | `packages/web` (served by the daemon) | baked into the daemon binary |
 | Desktop app | `packages/desktop`, `scripts/build-desktop.ts` | `.dmg`, `-setup.exe`, `.AppImage`, `.deb` |
 | Website | `packages/site` | Docker image (Coolify) |
-| Release | `scripts/release.ts` | `release/<version>/` + `SHA256SUMS` + `manifest.json` |
+| Release | `scripts/release.ts` | `release/<version>/` + `SHA256SUMS`, published as GitHub release `v<version>` |
 
 Asset names, URLs and the manifest format live in `packages/commons/src/assets.ts`:
 
@@ -20,8 +20,30 @@ Asset names, URLs and the manifest format live in `packages/commons/src/assets.t
 | `desktop-darwin-arm64` / `desktop-darwin-x64` | `GitNut-<version>-darwin-arm64.dmg` / `…-darwin-x64.dmg` |
 | `desktop-windows-x64` | `GitNut-<version>-windows-x64-setup.exe` (NSIS) |
 | `desktop-linux-x64` / `desktop-linux-x64-deb` | `GitNut-<version>-linux-x64.AppImage` / `…-linux-x64.deb` |
+| (desktop updater) | `GitNut-<version>-darwin-{arm64,x64}.app.tar.gz`, plus `<file>.sig` for those, the setup `.exe` and the AppImage |
 
-Every asset URL is `${GITNUT_DOWNLOAD_BASE_URL}/${version}/${file}`.
+Every file is served at `<site>/releases/<version>/<file>` (a redirect to the GitHub release).
+
+## Environment variables
+
+Three places, nothing else. Keep build machine values in `.env` at the repo root (gitignored, Bun
+loads it for every script).
+
+| Where | Variable | Required | Meaning |
+| --- | --- | --- | --- |
+| Build machines (`.env`) | `GITNUT_SITE_URL` | yes | The website, e.g. `https://gitnut.dev`. Baked into every binary: updates come from `<site>/manifest.json`, which lists the download URLs. |
+| | `TAURI_SIGNING_PRIVATE_KEY` | desktop builds | Path to (or content of) the desktop updater key; `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` if it has one. |
+| | `APPLE_SIGNING_IDENTITY` | no | macOS certificate; picked from the Keychain when unset. `GITNUT_NOTARY_PROFILE` (default `gitnut-notary`) for notarization. |
+| Website (Coolify) | `GITNUT_GITHUB_REPO` | yes | `owner/repo` whose GitHub releases are the source of truth (versions, files, checksums, changelog, desktop updates). |
+| | `GITNUT_SITE_URL` | no | Canonical URL (default: from the request / `X-Forwarded-*`). |
+| | `GITNUT_GITHUB_TOKEN` | no | Read-only token while the repo is private (files are then streamed through the site). |
+| | `GITNUT_GITHUB_REFRESH_MINUTES` | no | How often releases are re-read (default 10). |
+| | `GITNUT_SPONSOR_GITHUB` / `_KOFI` / `_PAYPAL` | no | Donation links shown in the Support section. |
+| | `PORT` / `HOST` | no | Listen address, default `0.0.0.0:7431`. |
+| Daemon at runtime | `GITNUT_HOME` | no | Config folder, default `~/.gitnut`. |
+
+Dev and tests only: `GITNUT_DEV_HOST`, `GITNUT_DEV_DAEMON`, `GITNUT_DEV_HOME`, `GITNUT_WEB_DIR`,
+`GITNUT_FIXTURES`, `GITNUT_E2E_*`.
 
 ## Install (users)
 
@@ -64,48 +86,14 @@ bun run scripts/build-daemon.ts --targets host --out dist/bin --version 0.1.0 [-
 bun run scripts/build-daemon.ts --targets all  --out dist/bin --version 0.1.0 --build-web
 ```
 
-The update source is baked in at build time (R-UPD-3) and is **required**: set `GITNUT_SITE_URL`
-(gives `<site>/manifest.json` and `<site>/releases`) or `GITNUT_MANIFEST_URL` /
-`GITNUT_DOWNLOAD_BASE_URL`. Put it in `.env` at the repo root on every build machine (Bun loads it
-for every script), so macOS / Windows builds can't ship without updates:
-
-```sh
-echo "GITNUT_SITE_URL=https://gitnut.example.com" >> .env
-```
-
-Without it `build-daemon.ts`, `build-desktop.ts` and `release.ts` stop with an error; `--dev`
-builds a local binary with updates off.
-Bun cross-compiles, so all five binaries build on any OS.
+`GITNUT_SITE_URL` (above) is baked in at build time (R-UPD-3) and **required**: without it
+`build-daemon.ts`, `build-desktop.ts` and `release.ts` stop with an error, so no shipped binary
+lacks updates. `--dev` builds a local binary with updates off. Bun cross-compiles, so all five
+binaries build on any OS.
 
 ## Release
 
-```sh
-export GITNUT_DOWNLOAD_BASE_URL=https://dl.example.com/gitnut   # required
-export GITNUT_SITE_URL=https://gitnut.example.com                 # manifest URL = $GITNUT_SITE_URL/manifest.json
-export GITNUT_RELEASE_NOTES="Short notes"                        # optional
-bun run release 0.2.0 [--targets all] [--skip-desktop] [--upload]
-```
-
-`release.ts`:
-
-1. sets `0.2.0` in every `package.json`, `tauri.conf.json` and `Cargo.toml`;
-2. builds the web client and all daemon binaries into `release/0.2.0/`;
-3. builds the desktop app for the host OS (skipped with `--skip-desktop`) and picks up any
-   installers already copied into `release/0.2.0/` (macOS / Windows builds made on those machines);
-4. writes `SHA256SUMS` and `manifest.json` (both over every file in the folder);
-5. `--upload` runs `GITNUT_UPLOAD_CMD` with `{dir}` and `{version}` replaced, for example
-   `GITNUT_UPLOAD_CMD='rsync -av {dir}/ host:/srv/gitnut/{version}/'`;
-6. prints the env vars to set on the website.
-
-Typical flow with three machines: run `bun run release X` on Linux (binaries + Linux desktop),
-build the macOS and Windows installers there (below), copy them into `release/X/`, then run
-`bun run release X --skip-desktop --upload` again to refresh `SHA256SUMS` / `manifest.json`
-and upload. `release/` is gitignored.
-
-### GitHub releases as the source of truth (recommended)
-
-The website can read everything from GitHub instead of env vars: set `GITNUT_GITHUB_REPO=flyingart/gitnut`
-on the site (plus `GITNUT_GITHUB_TOKEN`, a read-only token, while the repo is private). Then a release is:
+GitHub releases are the source of truth: the website reads them, nothing else needs updating.
 
 ```sh
 cat > notes.md <<'MD'
@@ -116,16 +104,25 @@ cat > notes.md <<'MD'
 ### Fixed
 - Footer cropped at the bottom
 MD
-bun run release 0.3.0 --publish --notes notes.md [--title "See your images change"]
+bun run release 0.3.0                                   # Linux: CLI binaries + Linux desktop
+# macOS / Windows installers: build them on the Mac (below), copy into release/0.3.0/
+bun run release 0.3.0 --skip-desktop --publish --notes notes.md [--title "…"]
 ```
 
-`--publish` creates the GitHub release `v0.3.0` with every file of `release/0.3.0/` (gh CLI). The site
-picks it up within `GITNUT_GITHUB_REFRESH_MINUTES` (default 10) or on restart: latest version, manifest,
-SHA256SUMS, downloads (`<site>/releases/<version>/<file>`, redirected to GitHub, or streamed through the
-site with the token while private) and the changelog page (one entry per release, from the notes'
-New / Improved / Fixed sections). Installers built elsewhere: `gh release upload v0.3.0 <file>`, then
-`gh release upload v0.3.0 release/0.3.0/SHA256SUMS --clobber` after re-running the release with
-`--skip-desktop` to refresh the checksums.
+`release.ts`:
+
+1. sets the version in every `package.json`, `tauri.conf.json`, `Cargo.toml` and `Cargo.lock`;
+2. builds the web client and all daemon binaries into `release/<version>/`;
+3. builds the desktop app for the host OS (skipped with `--skip-desktop`), including its signed
+   updater files, and picks up installers already copied into the folder;
+4. writes `SHA256SUMS` over every file and lists what is still missing;
+5. `--publish` creates the GitHub release `v<version>` with every file (gh CLI). Notes use
+   `### New` / `### Improved` / `### Fixed` with `- ` bullets: they become the changelog page, the
+   daemon update notes and the desktop update dialog.
+
+The site picks the release up within `GITNUT_GITHUB_REFRESH_MINUTES` (default 10) or on restart.
+Files added later: `gh release upload v0.3.0 <file>`, then re-run with `--skip-desktop` and
+`gh release upload v0.3.0 release/0.3.0/SHA256SUMS --clobber`. `release/` is gitignored.
 
 ## Website (Coolify)
 
@@ -133,34 +130,19 @@ Docker image from `packages/site/Dockerfile`, **build context = repository root*
 
 ```sh
 docker build -f packages/site/Dockerfile -t gitnut-site .
-docker run -p 7431:7431 -e GITNUT_LATEST_VERSION=0.1.0 -e GITNUT_DOWNLOAD_BASE_URL=https://dl.example.com/gitnut gitnut-site
+docker run -p 7431:7431 -e GITNUT_GITHUB_REPO=flyingart/gitnut gitnut-site
 ```
 
 Coolify: build pack *Dockerfile*, base directory `/`, Dockerfile location
-`/packages/site/Dockerfile`, port 7431, health check `/healthz`.
+`/packages/site/Dockerfile`, port 7431, health check `/healthz` on host `127.0.0.1` (Alpine
+resolves `localhost` to IPv6). Env: see the table above.
 
-| Env var | Required | Meaning |
-| --- | --- | --- |
-| `GITNUT_GITHUB_REPO` | no | `owner/repo`: read version, files, checksums and changelog from its GitHub releases (replaces the two vars below) |
-| `GITNUT_GITHUB_TOKEN` | no | Read-only token for a private repo; files are then streamed through the site |
-| `GITNUT_GITHUB_REFRESH_MINUTES` | no | How often releases are re-read (default 10) |
-| `GITNUT_LATEST_VERSION` | yes* | Current version, e.g. `0.2.0` (*unless `GITNUT_GITHUB_REPO`) |
-| `GITNUT_DOWNLOAD_BASE_URL` | yes* | Release host; assets at `<base>/<version>/<file>` (*GitHub mode: `<site>/releases`) |
-| `GITNUT_SITE_URL` | no | Public site URL for install scripts / `downloadPage` (default: from request / `X-Forwarded-*`) |
-| `GITNUT_RELEASE_NOTES` | no | `notes` in the manifest |
-| `GITNUT_PUBLISHED_AT` | no | ISO date, `publishedAt` in the manifest |
-| `GITNUT_RELEASE_DIR` | no | Local folder with `<version>/<files>`: the site then serves them at `/releases/<version>/<file>` (set `GITNUT_DOWNLOAD_BASE_URL` to `<site>/releases`), so one box hosts site + downloads |
-| `GITNUT_SPONSOR_GITHUB` | no | GitHub Sponsors URL, e.g. `https://github.com/sponsors/<user>`: shown as a donation button in the Support section |
-| `GITNUT_SPONSOR_KOFI` | no | Ko-fi URL, e.g. `https://ko-fi.com/<user>` |
-| `GITNUT_SPONSOR_PAYPAL` | no | PayPal URL, e.g. `https://paypal.me/<user>` |
-| `PORT` / `HOST` | no | Listen address, default `0.0.0.0:7431` |
-
-Endpoints: `/` landing page (detects OS + CPU, desktop download first), `/manifest.json`
-(adds `sha256` per asset when `<base>/<version>/SHA256SUMS` is reachable, cached 5 min),
-`/install.sh`, `/install.ps1`, `/download/<key>` (302 to the asset), `/healthz`, `/changelog`
-(rendered from `public/changelog.json`, newest first), `/site.json` (`{ sponsors }` from the env above),
-`/screenshots.json`. Without `GITNUT_LATEST_VERSION` / `GITNUT_DOWNLOAD_BASE_URL` the release
-endpoints answer 503. Screenshots: the gallery shows `docs/screenshots/*.png` (the README ones, made by
+Endpoints: `/` landing page (detects OS + CPU, desktop download first), `/changelog`,
+`/manifest.json` (daemon updates, `sha256` from the release's `SHA256SUMS`), `/desktop/latest.json`
+(Tauri updater feed), `/install.sh`, `/install.ps1`, `/download/<key>` (302 to the file),
+`/releases/<version>/<file>`, `/changelog.json`, `/site.json` (`{ sponsors }`), `/screenshots.json`,
+`/robots.txt`, `/sitemap.xml`, `/healthz`. Without a published release the release endpoints answer
+503 (`/desktop/latest.json`: 204). The gallery shows `docs/screenshots/*.png` (made by
 `bun run screenshots`); the Docker image copies them in.
 
 ## Desktop app (Tauri v2)
@@ -258,14 +240,22 @@ bun run build:desktop --version 0.2.0 --target x86_64-pc-windows-msvc
 
 ## How updates flow
 
-1. `bun run release X` + upload puts the files at `<base>/X/`; set `GITNUT_LATEST_VERSION=X`
-   on the site. `/manifest.json` now lists X with SHA-256 values.
-2. A daemon (CLI install or desktop) checks its manifest URL (baked in, overridable in
-   settings). `gitnut update` or the web client's update button (`update.apply`) downloads
-   `gitnut-<platform>`, verifies it against `SHA256SUMS`, replaces its own binary and restarts.
-3. The daemon serves the web client, so the web client is updated with it.
-4. The desktop app runs the daemon from `~/.gitnut/bin`, so the same update applies there. On
-   start the app only replaces that copy when its bundled sidecar is newer.
+1. `bun run release X --publish` creates the GitHub release; the site's `/manifest.json` and
+   `/desktop/latest.json` offer X within 10 minutes.
+2. **Daemon** (CLI install or inside the desktop app): checks `<site>/manifest.json`. `gitnut update`
+   or the update icon next to the logo downloads `gitnut-<platform>`, verifies it against
+   `SHA256SUMS`, replaces its binary and restarts. The web client is served by the daemon, so it
+   updates with it.
+3. **Desktop app**: checks `<site>/desktop/latest.json` 15 s after start and every 10 minutes. A new
+   version asks "Install and restart" (or "Later", not asked again for that version until restart),
+   verifies the download against the updater public key in `tauri.conf.json`, stops the daemon it
+   started and relaunches; the new app's bundled daemon then replaces the one in `~/.gitnut/bin`.
+   The `.deb` does not self-update (reinstall it, or use the AppImage).
+
+**Updater key:** made once with `bunx tauri signer generate -w ~/.tauri/gitnut.key`. The public key
+is in `tauri.conf.json` (`plugins.updater.pubkey`); the private key must be on every machine that
+builds desktop installers (`TAURI_SIGNING_PRIVATE_KEY` in `.env`). Keep a copy in a password
+manager: without it, installed apps can't receive desktop updates any more.
 
 ## Logo
 

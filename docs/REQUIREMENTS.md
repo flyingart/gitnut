@@ -108,22 +108,25 @@ component) connects to many daemons and shows all their projects.
 
 ## Updates and distribution
 
-- **R-UPD-1** The website exposes `/manifest.json` (`UpdateManifest`). The latest version comes
-  from env var `GITNUT_LATEST_VERSION`; asset URLs come from `GITNUT_DOWNLOAD_BASE_URL`.
+- **R-UPD-1** The website exposes `/manifest.json` (`UpdateManifest`). The latest version, its
+  files and checksums come from the GitHub releases of `GITNUT_GITHUB_REPO`; files are served at
+  `<site>/releases/<version>/<file>`.
 - **R-UPD-2** `gitnut update` (CLI) and the web client's update button download the binary for
   the platform, verify its SHA-256 (from `SHA256SUMS` next to the assets), replace the binary
   and restart the daemon. Because the daemon serves the web client, this updates both.
-- **R-UPD-3** Default manifest URL and download base are baked in at build time from env vars
-  (`GITNUT_SITE_URL`, or `GITNUT_MANIFEST_URL` / `GITNUT_DOWNLOAD_BASE_URL`). Builds fail without
-  them (`--dev` for local builds), the client has no field for it (CLI override only). The
-  client shows an update icon next to the logo when a server has an update.
+- **R-UPD-3** `GITNUT_SITE_URL` is baked in at build time (manifest = `<site>/manifest.json`, which
+  lists the download URLs). Builds fail without it (`--dev` for local builds); the client has no
+  field for it (CLI override only). The client shows an update icon next to the logo when a
+  server has an update, and Settings show the client and desktop app versions.
 - **R-UPD-4** Install with one command: `curl -fsSL <site>/install.sh | sh` (Linux/macOS) and
   `irm <site>/install.ps1 | iex` (Windows).
 - **R-UPD-5** Desktop apps (macOS, Windows, Linux) built with Tauri v2. Starting the app starts
   the daemon (like Jean); the app shows the web client served by that daemon. The desktop app
-  keeps its daemon in the user data folder so web-client updates update it too.
+  keeps its daemon in the user data folder so web-client updates update it too. The app updates
+  itself with the Tauri updater: `<site>/desktop/latest.json` (from the GitHub release), checked
+  every 10 minutes, signed with our updater key, "Install and restart" / "Later".
 - **R-UPD-6** Scripts build web + daemon binaries for all platforms, a release folder with
-  `SHA256SUMS` + `manifest.json`, and the desktop app on its host OS. Builds of macOS / Windows
+  `SHA256SUMS` (published as a GitHub release), and the desktop app on its host OS. Builds of macOS / Windows
   desktop apps happen manually on those machines (instructions in README).
 
 ## Website (packages/site)
@@ -131,7 +134,7 @@ component) connects to many daemons and shows all their projects.
 - **R-SITE-1** Landing page detects OS and CPU architecture and shows the matching download
   button first (like t3.codes/download), with all other downloads listed.
 - **R-SITE-2** Serves `/manifest.json`, `/install.sh`, `/install.ps1`, and `/download/<platform>`
-  redirects. Configured only by env vars. Has a Dockerfile for Coolify.
+  redirects. Configured by env vars (only `GITNUT_GITHUB_REPO` required). Has a Dockerfile for Coolify.
 - **R-SITE-3** Pages carry canonical, Open Graph (og:image), Twitter and JSON-LD tags; the site
   serves `/robots.txt` and `/sitemap.xml` on `GITNUT_SITE_URL`, and explains how to open the
   unsigned builds on macOS, Windows and Linux.

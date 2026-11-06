@@ -38,7 +38,7 @@ export interface ViewOptions {
   showTabs: boolean;
 }
 
-export const DEFAULT_VIEW_OPTIONS: ViewOptions = {
+const DEFAULT_VIEW_OPTIONS: ViewOptions = {
   changesMode: "tree",
   projectsGrouping: "server",
   projectsSort: "name",

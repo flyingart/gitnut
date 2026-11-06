@@ -10,7 +10,7 @@ import { laneColors, paintRows, solidColor } from "./graph/canvas";
 import { FilterBar, toGraphFilter, type LogFilter } from "./graph/FilterBar";
 import { RefPills } from "./graph/refs";
 import { clickSelection, moveSelection, type ListSelection } from "./selection";
-import { Empty, formatDate, isMenuKey, Popover, Spinner, useContextMenu, useVirtualRows } from "./ui";
+import { Empty, formatDate, isMenuKey, Loading, Menu, MenuCheck, Popover, shortHash, useContextMenu, useVirtualRows } from "./ui";
 import { useViewOptions, type CommitColumn } from "./viewOptions";
 
 /** Imperative access, e.g. for a branches panel. */
@@ -352,7 +352,7 @@ export function CommitGraph(props: CommitGraphProps) {
           {props.toolbarEnd}
           <Popover title="View options" icon={<Settings2 size={14} />} align="right">
             {() => (
-              <div className="gitnut-menu">
+              <Menu>
                 {!locked("graphSort") && (
                   <>
                     <div className="gitnut-menu-label">Sort</div>
@@ -363,31 +363,28 @@ export function CommitGraph(props: CommitGraphProps) {
                         ["date", "By date"],
                       ] as const
                     ).map(([k, label]) => (
-                      <button key={k} type="button" className={`gitnut-menu-item${options.graphSort === k ? " gitnut-active" : ""}`} onClick={() => set("graphSort", k)}>
-                        <input type="radio" readOnly checked={options.graphSort === k} tabIndex={-1} />
+                      <MenuCheck key={k} radio checked={options.graphSort === k} onChange={() => set("graphSort", k)}>
                         {label}
-                      </button>
+                      </MenuCheck>
                     ))}
                   </>
                 )}
                 {!locked("showLongEdges") && (
-                  <label className="gitnut-menu-item">
-                    <input type="checkbox" checked={options.showLongEdges} onChange={() => set("showLongEdges", !options.showLongEdges)} />
+                  <MenuCheck checked={options.showLongEdges} onChange={() => set("showLongEdges", !options.showLongEdges)}>
                     Show long edges
-                  </label>
+                  </MenuCheck>
                 )}
                 {!locked("columns") && (
                   <>
                     <div className="gitnut-menu-label">Columns</div>
                     {(["author", "date", "hash"] as const).map((c) => (
-                      <label key={c} className="gitnut-menu-item">
-                        <input type="checkbox" checked={cols.includes(c)} onChange={() => set("columns", cols.includes(c) ? cols.filter((x) => x !== c) : [...cols, c])} />
+                      <MenuCheck key={c} checked={cols.includes(c)} onChange={() => set("columns", cols.includes(c) ? cols.filter((x) => x !== c) : [...cols, c])}>
                         {c === "author" ? "Author" : c === "date" ? "Date" : "Hash"}
-                      </label>
+                      </MenuCheck>
                     ))}
                   </>
                 )}
-              </div>
+              </Menu>
             )}
           </Popover>
         </div>
@@ -409,10 +406,9 @@ export function CommitGraph(props: CommitGraphProps) {
           <div style={{ height: rowCount * rh, position: "relative" }}>{rows}</div>
         </div>
         {(data.loading || (!graph && data.filtering)) && (
-          <div className="gitnut-center gitnut-overlay">
-            <Spinner size={18} />
+          <Loading size={18} className="gitnut-overlay">
             <span className="gitnut-muted">{data.loading ? "Loading history…" : "Filtering…"}</span>
-          </div>
+          </Loading>
         )}
         {data.error && !snapshot && <Empty title="Couldn't load the history">{data.error.message}</Empty>}
         {graph && !rowCount && <Empty icon={<GitCommitHorizontal size={22} />} title={hasAnyFilter(filter) ? "No commits match the filters" : "No commits yet"} />}
@@ -476,7 +472,7 @@ const LogRow = memo(function LogRow({ row, rh, commit, d, selected, indent, refs
       )}
       {cols.includes("hash") && (
         <div role="gridcell" className="gitnut-log-cell gitnut-log-hash gitnut-mono" style={{ width: COL_W.hash }}>
-          {d?.hash.slice(0, 8)}
+          {d && shortHash(d.hash)}
         </div>
       )}
     </div>

@@ -3,7 +3,7 @@ import { KeyRound } from "lucide-react";
 import { useConnection, useConnectionState, type ServerProp } from "./provider";
 import { GitnutRoot, useCx, type StyleProps } from "./root";
 import { Logo } from "./Logo";
-import { Button } from "./ui";
+import { Button, SearchInput } from "./ui";
 
 /** Props of {@link LoginForm}. */
 export interface LoginFormProps extends StyleProps {
@@ -43,10 +43,17 @@ export function LoginForm(props: LoginFormProps) {
       <h1 className="gitnut-login-title">Log in to {name || "gitnut"}</h1>
       <p className="gitnut-muted gitnut-login-text">This daemon needs its access token. Print it on that machine with <code>gitnut token</code>.</p>
       {connError && !error && <p className="gitnut-muted gitnut-login-text">{connError}</p>}
-      <label className={cx("input", "gitnut-search gitnut-login-input")}>
-        <KeyRound size={14} className="gitnut-muted" />
-        <input type="password" autoFocus autoComplete="current-password" placeholder="Access token" aria-label="Access token" value={token} onChange={(e) => setToken(e.target.value)} />
-      </label>
+      <SearchInput
+        className="gitnut-login-input"
+        icon={<KeyRound size={14} className="gitnut-muted" />}
+        type="password"
+        autoFocus
+        autoComplete="current-password"
+        placeholder="Access token"
+        aria-label="Access token"
+        value={token}
+        onChange={(e) => setToken(e.target.value)}
+      />
       {error && <div className="gitnut-error-text" role="alert">{error}</div>}
       <Button type="submit" variant="primary" size="lg" busy={busy} disabled={!token.trim()} className="gitnut-login-submit">
         Log in

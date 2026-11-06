@@ -1,11 +1,14 @@
-import { Component, useCallback, useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from "react";
+import { Component, useCallback, useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { LoaderCircle, X } from "lucide-react";
+import { LoaderCircle, Search, X } from "lucide-react";
+import type { WorktreeSummary } from "@gitnut/commons";
 import { useCx } from "./root";
 
 type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "default" | "primary" | "ghost" | "danger";
-  size?: "sm" | "md" | "lg";
+  /** `link`: inline text button (`.gitnut-link`); `size` doesn't apply. */
+  variant?: "default" | "primary" | "ghost" | "danger" | "link";
+  /** `xs`: a bare icon inside a row or field (tab close, clear). */
+  size?: "xs" | "sm" | "md" | "lg";
   icon?: ReactNode;
   busy?: boolean;
   active?: boolean;
@@ -17,7 +20,11 @@ export function Button({ variant = "default", size = "md", icon, busy, active, c
     <button
       type="button"
       {...rest}
-      className={cx("button", "gitnut-btn", `gitnut-btn-${variant}`, `gitnut-btn-${size}`, !children && "gitnut-btn-icon", active && "gitnut-active", className)}
+      className={
+        variant === "link"
+          ? cx(null, "gitnut-link", className)
+          : cx("button", "gitnut-btn", `gitnut-btn-${variant}`, `gitnut-btn-${size}`, !children && "gitnut-btn-icon", active && "gitnut-active", className)
+      }
       aria-pressed={active}
       disabled={rest.disabled || busy}
     >
@@ -33,6 +40,26 @@ export const IconButton = ({ title, ...rest }: BtnProps & { title: string }) => 
 );
 
 export const Spinner = ({ size = 14 }: { size?: number }) => <LoaderCircle size={size} className="gitnut-spin" aria-hidden />;
+
+/** Spinner centred in its container, optionally with a text. */
+export const Loading = ({ size, className, children }: { size?: number; className?: string; children?: ReactNode }) => (
+  <div className={className ? `gitnut-center ${className}` : "gitnut-center"}>
+    <Spinner size={size} />
+    {children}
+  </div>
+);
+
+/** Search-style text field: a leading icon (magnifier by default), plus a clear button when `onClear` is given and there is text. */
+export function SearchInput({ icon = <Search size={13} className="gitnut-muted" />, onClear, className, ...rest }: InputHTMLAttributes<HTMLInputElement> & { icon?: ReactNode; onClear?: () => void }) {
+  const cx = useCx();
+  return (
+    <label className={cx("input", "gitnut-search", className)}>
+      {icon}
+      <input {...rest} />
+      {onClear && rest.value && <IconButton size="xs" className="gitnut-search-clear" title="Clear" icon={<X size={12} />} onClick={onClear} />}
+    </label>
+  );
+}
 
 /** Segmented control. */
 export function Segmented<T extends string>({
@@ -133,6 +160,34 @@ export function Dialog({ title, onClose, children, wide, className }: { title: R
     </span>
   );
 }
+
+type MenuButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { icon?: ReactNode; hint?: string; danger?: boolean; active?: boolean };
+
+/** One row of a {@link Menu} or {@link ContextMenu}. `icon={null}` keeps an empty icon column so labels line up. */
+export function MenuButton({ icon, hint, danger, active, children, ...rest }: MenuButtonProps) {
+  return (
+    <button type="button" {...rest} className={["gitnut-menu-item", danger && "gitnut-menu-danger", active && "gitnut-active"].filter(Boolean).join(" ")}>
+      {icon !== undefined && <span className="gitnut-menu-icon">{icon}</span>}
+      <span className="gitnut-menu-text">{children}</span>
+      {hint && <span className="gitnut-menu-hint">{hint}</span>}
+    </button>
+  );
+}
+
+/** Checkbox row of a {@link Menu}; `radio` makes it a radio button, highlighted while checked. */
+export const MenuCheck = ({ checked, onChange, radio, children }: { checked: boolean; onChange: () => void; radio?: boolean; children: ReactNode }) => (
+  <label className={radio && checked ? "gitnut-menu-item gitnut-active" : "gitnut-menu-item"}>
+    <input type={radio ? "radio" : "checkbox"} checked={checked} onChange={onChange} />
+    {children}
+  </label>
+);
+
+/** Menu panel for a {@link Popover}: {@link MenuButton} and {@link MenuCheck} rows, `.gitnut-menu-label` headings. Scrolls above `maxHeight`. */
+export const Menu = ({ maxHeight, children }: { maxHeight?: number; children: ReactNode }) => (
+  <div className={maxHeight ? "gitnut-menu gitnut-scroll" : "gitnut-menu"} style={maxHeight ? { maxHeight } : undefined}>
+    {children}
+  </div>
+);
 
 /** One entry of a {@link ContextMenu}; `"separator"` draws a line. */
 export type MenuItem =
@@ -235,22 +290,21 @@ export function ContextMenu({ x, y, items, onClose, label = "Actions" }: Context
               it === "separator" ? (
                 i > 0 && i < items.length - 1 && items[i - 1] !== "separator" ? <div key={i} role="separator" className="gitnut-menu-sep" /> : null
               ) : (
-                <button
+                <MenuButton
                   key={i}
-                  type="button"
                   role="menuitem"
                   tabIndex={-1}
                   disabled={it.disabled}
-                  className={`gitnut-menu-item${it.danger ? " gitnut-menu-danger" : ""}`}
+                  danger={it.danger}
+                  icon={it.icon ?? null}
+                  hint={it.hint}
                   onClick={() => {
                     close.current();
                     it.onSelect?.();
                   }}
                 >
-                  <span className="gitnut-menu-icon">{it.icon}</span>
-                  <span className="gitnut-menu-text">{it.label}</span>
-                  {it.hint && <span className="gitnut-menu-hint">{it.hint}</span>}
-                </button>
+                  {it.label}
+                </MenuButton>
               ),
             )}
           </div>,
@@ -318,7 +372,6 @@ const TIME = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-di
 const DAY = new Intl.DateTimeFormat(undefined, { year: "2-digit", month: "numeric", day: "numeric" });
 const FULL = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
 
-/** Format unix seconds like IntelliJ's log: "Today 14:02", "Yesterday 09:12", else a short date and time. */
 /** Shows `fallback` instead of crashing the tree when a child throws while rendering or in an effect. */
 export class ErrorBoundary extends Component<{ fallback: (error: Error) => ReactNode; children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null };
@@ -336,6 +389,16 @@ export class ErrorBoundary extends Component<{ fallback: (error: Error) => React
 /** Bytes as B / KB / MB. */
 export const formatSize = (n: number) => (n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(1)} MB`);
 
+/** Abbreviated commit hash (8 characters). */
+export const shortHash = (hash: string) => hash.slice(0, 8);
+
+/** Last folder of a worktree path, with `/` or `\` separators. */
+export const worktreeFolder = (path: string) => path.replace(/[\\/]+$/, "").split(/[\\/]/).pop() ?? path;
+
+/** Branch of a worktree, or "detached at <hash>". */
+export const worktreeLabel = (wt: WorktreeSummary) => wt.branch ?? `detached at ${wt.head ? shortHash(wt.head) : "?"}`;
+
+/** Format unix seconds like IntelliJ's log: "Today 14:02", "Yesterday 09:12", else a short date and time. */
 export function formatDate(sec: number, now = Date.now()): string {
   const t = sec * 1000;
   const day = new Date(now);

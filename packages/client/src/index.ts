@@ -23,7 +23,7 @@ export {
   DetailsCache,
 } from "./hooks";
 export type { UseGraphOptions, GraphData, FileDiffRequest, UpdatePhase } from "./hooks";
-export { useViewOptions, getViewOptions, setViewOptions, setViewOptionsStorageKey, DEFAULT_VIEW_OPTIONS } from "./viewOptions";
+export { useViewOptions, getViewOptions, setViewOptions, setViewOptionsStorageKey } from "./viewOptions";
 export type { ViewOptions, CommitColumn } from "./viewOptions";
 export { CLIENT_VERSION } from "./version";
 export { ErrorBoundary } from "./ui";
@@ -80,8 +80,6 @@ export {
   createToastStore,
   useToasts,
   Toasts,
-  ConfirmDialog,
-  PromptDialog,
   confirmAction,
   promptAction,
   checkRefName,

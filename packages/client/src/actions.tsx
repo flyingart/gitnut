@@ -9,7 +9,7 @@ import { useRepos } from "./hooks";
 import { checkRefName, confirmAction, promptAction, toasts, type ConfirmSpec } from "./overlays";
 import { resolveConnection, useConnection, useServers, type ServerProp } from "./provider";
 import type { ChangeItem } from "./tree";
-import { copyText, type MenuItem } from "./ui";
+import { copyText, shortHash, worktreeFolder, worktreeLabel, type MenuItem } from "./ui";
 
 /** Options of one {@link useGitAction} run. */
 export interface GitActionOptions<R> {
@@ -55,10 +55,10 @@ export function useGitAction(server?: ServerProp) {
   return { run, busy, conn: base };
 }
 
-const short = (h: string) => h.slice(0, 8);
-const wtName = (wt: WorktreeSummary) => wt.branch ?? `detached ${short(wt.head ?? "")}`;
-/** "acme-web / main" (plus the folder for linked worktrees): where an action runs. */
-export const targetLabel = (repo: RepoSummary, wt: WorktreeSummary) => `${repo.name} / ${wtName(wt)}${wt.isMain ? "" : ` (${wt.path.split(/[\\/]/).pop()})`}`;
+/** "main", plus the folder for linked worktrees: "feature/x (acme-web-x)". */
+const wtName = (wt: WorktreeSummary) => `${worktreeLabel(wt)}${wt.isMain ? "" : ` (${worktreeFolder(wt.path)})`}`;
+/** "acme-web / main": where an action runs. */
+export const targetLabel = (repo: RepoSummary, wt: WorktreeSummary) => `${repo.name} / ${wtName(wt)}`;
 
 function copy(text: string, what: string) {
   void copyText(text).then((ok) => toasts.push(ok ? { kind: "info", title: `Copied ${what}` } : { kind: "error", title: "Couldn't copy", output: "The browser blocked clipboard access." }));
@@ -82,7 +82,7 @@ export function commitMenuItems(commits: Pick<CommitDetails, "hash" | "subject">
   const one = n === 1;
   const hashes = commits.map((c) => c.hash);
   return [
-    { label: one ? "Copy revision number" : `Copy ${n} revision numbers`, icon: <Copy size={13} />, onSelect: () => h.copy(hashes.join("\n"), one ? short(hashes[0]) : `${n} hashes`) },
+    { label: one ? "Copy revision number" : `Copy ${n} revision numbers`, icon: <Copy size={13} />, onSelect: () => h.copy(hashes.join("\n"), one ? shortHash(hashes[0]) : `${n} hashes`) },
     { label: one ? "Copy subject" : `Copy ${n} subjects`, icon: <Copy size={13} />, onSelect: () => h.copy(commits.map((c) => c.subject).join("\n"), one ? "the subject" : `${n} subjects`) },
     "separator",
     { label: "Checkout revision", icon: <CircleDot size={13} />, disabled: !one || !hasWorktree, onSelect: () => h.checkout(hashes[0]) },
@@ -172,25 +172,25 @@ export function useLogActions(repoId: string, server?: ServerProp, worktreeId?: 
     (commits: Pick<CommitDetails, "hash" | "subject">[]) =>
       commitMenuItems(commits, !!wt, {
         copy,
-        checkout: (h) => wt && void run("worktree.checkout", { worktreeId: wt.id, ref: h }, { label: "Checkout", success: `Checked out ${short(h)} (detached) in ${where}` }),
-        newBranch: (h) => void newBranch(h, short(h)),
+        checkout: (h) => wt && void run("worktree.checkout", { worktreeId: wt.id, ref: h }, { label: "Checkout", success: `Checked out ${shortHash(h)} (detached) in ${where}` }),
+        newBranch: (h) => void newBranch(h, shortHash(h)),
         newTag: async (h) => {
           const r = await promptAction({
-            title: `New tag at ${short(h)}`,
+            title: `New tag at ${shortHash(h)}`,
             label: "Tag name",
             validate: checkRefName,
             message: { label: "Message (makes an annotated tag)", placeholder: "Optional" },
-            command: (v, _c, m) => (m ? `git tag -a -m "${m}" ${v || "<name>"} ${short(h)}` : `git tag ${v || "<name>"} ${short(h)}`),
+            command: (v, _c, m) => (m ? `git tag -a -m "${m}" ${v || "<name>"} ${shortHash(h)}` : `git tag ${v || "<name>"} ${shortHash(h)}`),
             confirmLabel: "Create tag",
           });
           if (r) await run("repo.tag.create", { repoId, name: r.value, at: h, message: r.message || undefined }, { label: "New tag", success: `Created tag ${r.value}` });
         },
-        cherryPick: (hs) => wt && void run("worktree.cherryPick", { worktreeId: wt.id, hashes: hs }, { label: "Cherry-pick", success: `Cherry-picked ${hs.length === 1 ? short(hs[0]) : `${hs.length} commits`} into ${where}` }),
-        revert: (hs) => wt && void run("worktree.revert", { worktreeId: wt.id, hashes: hs }, { label: "Revert", success: `Reverted ${hs.length === 1 ? short(hs[0]) : `${hs.length} commits`} in ${where}` }),
+        cherryPick: (hs) => wt && void run("worktree.cherryPick", { worktreeId: wt.id, hashes: hs }, { label: "Cherry-pick", success: `Cherry-picked ${hs.length === 1 ? shortHash(hs[0]) : `${hs.length} commits`} into ${where}` }),
+        revert: (hs) => wt && void run("worktree.revert", { worktreeId: wt.id, hashes: hs }, { label: "Revert", success: `Reverted ${hs.length === 1 ? shortHash(hs[0]) : `${hs.length} commits`} in ${where}` }),
         reset: async (h) => {
           if (!wt) return;
           const r = await confirmAction({
-            title: `Reset ${wt.branch ?? "HEAD"} to ${short(h)}`,
+            title: `Reset ${wt.branch ?? "HEAD"} to ${shortHash(h)}`,
             worktree: where,
             choices: [
               { value: "soft", label: "Soft", hint: "Keep all changes staged" },
@@ -199,10 +199,10 @@ export function useLogActions(repoId: string, server?: ServerProp, worktreeId?: 
             ],
             initialChoice: "mixed",
             danger: (c) => c === "hard",
-            command: (c) => `git reset --${c} ${short(h)}`,
+            command: (c) => `git reset --${c} ${shortHash(h)}`,
             confirmLabel: "Reset",
           });
-          if (r?.choice) await run("worktree.reset", { worktreeId: wt.id, to: h, mode: r.choice as "soft" | "mixed" | "hard" }, { label: "Reset", success: `Reset ${wt.branch ?? "HEAD"} to ${short(h)} (${r.choice})` });
+          if (r?.choice) await run("worktree.reset", { worktreeId: wt.id, to: h, mode: r.choice as "soft" | "mixed" | "hard" }, { label: "Reset", success: `Reset ${wt.branch ?? "HEAD"} to ${shortHash(h)} (${r.choice})` });
         },
       }),
     [wt, where, run, newBranch, repoId],
@@ -312,7 +312,6 @@ export function WorktreePicker({ repo, value, onChange }: WorktreePickerProps) {
         {list.map((w) => (
           <option key={w.id} value={w.id}>
             {wtName(w)}
-            {w.isMain ? "" : ` (${w.path.split(/[\\/]/).pop()})`}
           </option>
         ))}
       </select>

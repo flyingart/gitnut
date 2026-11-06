@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, GitBranch } from "lucide-react";
-import type { WorktreeCounts, WorktreeSummary } from "@gitnut/commons";
+import type { WorktreeCounts } from "@gitnut/commons";
 import { targetLabel, useLocalFileMenu } from "./actions";
 import { ChangesBrowser } from "./ChangesBrowser";
 import { ChangesTree } from "./ChangesTree";
@@ -10,7 +10,7 @@ import { useLocalChanges, useWorktree } from "./hooks";
 import type { ServerProp } from "./provider";
 import { GitnutRoot, useCx, type StyleProps } from "./root";
 import { changesFromList, type ChangeItem } from "./tree";
-import { Empty, Spinner } from "./ui";
+import { Empty, Loading, worktreeFolder, worktreeLabel } from "./ui";
 
 /** Props of {@link LocalChanges}. Give `worktreePath` or `worktreeId`. */
 export interface LocalChangesProps extends StyleProps {
@@ -36,8 +36,6 @@ export interface LocalChangesProps extends StyleProps {
 }
 
 export const totalCount = (c: WorktreeCounts) => c.staged + c.unstaged + c.untracked + c.conflicted;
-export const worktreeLabel = (wt: WorktreeSummary) => wt.branch ?? `detached at ${wt.head?.slice(0, 8) ?? "?"}`;
-const base = (p: string) => p.replace(/[\\/]+$/, "").split(/[\\/]/).pop() ?? p;
 
 /** Live uncommitted changes of one worktree, with commit, fetch / pull / push and a diff. */
 export function LocalChanges(props: LocalChangesProps) {
@@ -71,9 +69,9 @@ export function LocalChanges(props: LocalChangesProps) {
   let body: ReactNode;
   if (!target) body = <Empty title="No worktree given" />;
   else if (state === "unauthorized") body = <Empty title="Not logged in">Log in to this daemon to see its changes.</Empty>;
-  else if (!wt && wtLoading) body = <div className="gitnut-center"><Spinner /></div>;
+  else if (!wt && wtLoading) body = <Loading />;
   else if (!wt) body = <Empty title="Worktree not found">{target} is not a worktree of a repository this daemon knows. Add it with <code>gitnut repos add</code>.</Empty>;
-  else if (loading) body = <div className="gitnut-center"><Spinner /></div>;
+  else if (loading) body = <Loading />;
   else if (props.diff === "none")
     body = (
       <div className="gitnut-browser-tree">
@@ -104,7 +102,7 @@ export function LocalChanges(props: LocalChangesProps) {
           {wt.upstream && <span className="gitnut-muted">{wt.upstream}</span>}
           {wt.ahead > 0 && <span className="gitnut-ab" title={`${wt.ahead} to push`}><ArrowUp size={11} />{wt.ahead}</span>}
           {wt.behind > 0 && <span className="gitnut-ab" title={`${wt.behind} to pull`}><ArrowDown size={11} />{wt.behind}</span>}
-          <span className="gitnut-muted gitnut-local-path" title={wt.path}>{repo && base(wt.path) !== repo.name ? `${repo.name} / ${base(wt.path)}` : base(wt.path)}</span>
+          <span className="gitnut-muted gitnut-local-path" title={wt.path}>{repo && worktreeFolder(wt.path) !== repo.name ? `${repo.name} / ${worktreeFolder(wt.path)}` : worktreeFolder(wt.path)}</span>
           <span className="gitnut-toolbar-spacer" />
           {props.headerExtra}
           {props.showActions !== false && <GitActions server={props.server} worktree={wt.id} actions={["fetch", "pull", "push", "stash", "unstash"]} />}

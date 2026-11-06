@@ -11,8 +11,8 @@ import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs
 import { join, relative, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { PLATFORMS, binaryName, platformOf, type Platform } from "../packages/commons/src/platform";
+import { ROOT, requireSiteUrl, run } from "./lib";
 
-const ROOT = resolve(import.meta.dir, "..");
 const DAEMON = join(ROOT, "packages", "daemon");
 const GENERATED = join(DAEMON, "src", "generated");
 
@@ -28,11 +28,7 @@ const { values } = parseArgs({
   },
 });
 
-const site = process.env.GITNUT_SITE_URL?.replace(/\/+$/, "") ?? "";
-if (!site && !values.dev) {
-  console.error("Set GITNUT_SITE_URL in the environment or .env, so the binary knows where updates come from.\nFor a local build without updates add --dev.");
-  process.exit(1);
-}
+const site = values.dev ? "" : requireSiteUrl(" For a local build without updates add --dev.");
 
 const host = platformOf(process.platform, process.arch);
 const targets: Platform[] =
@@ -43,12 +39,6 @@ const version = values.version ?? (await Bun.file(join(ROOT, "package.json")).js
 const out = resolve(ROOT, values.out!);
 const WEB_DIST = resolve(ROOT, values["web-dir"]!);
 
-function run(cmd: string[], cwd = ROOT, env: Record<string, string> = {}) {
-  console.log(`$ ${cmd.join(" ")}`);
-  const r = Bun.spawnSync(cmd, { cwd, stdout: "inherit", stderr: "inherit", env: { ...process.env, ...env } });
-  if (r.exitCode !== 0) throw new Error(`failed: ${cmd.join(" ")}`);
-}
-
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((n) => {
     const p = join(dir, n);
@@ -57,7 +47,7 @@ function files(dir: string): string[] {
 }
 
 // the web client shows the same version as the daemon that serves it
-if (values["build-web"] && !values["no-web"]) run(["bun", "run", "--cwd", "packages/web", "build"], ROOT, { GITNUT_VERSION: version });
+if (values["build-web"] && !values["no-web"]) run(["bun", "run", "--cwd", "packages/web", "build"], { live: true, env: { GITNUT_VERSION: version } });
 
 // Generated module: URL path -> embedded file path. Empty map = no web client in this build.
 rmSync(GENERATED, { recursive: true, force: true });
@@ -78,17 +68,8 @@ const define = (k: string, v: string) => ["--define", `${k}=${JSON.stringify(v)}
 mkdirSync(out, { recursive: true });
 for (const t of targets) {
   const file = join(out, binaryName(t));
-  run([
-    "bun",
-    "build",
-    "--compile",
-    "--minify",
-    `--target=bun-${t}`,
-    ...define("GITNUT_VERSION", version),
-    ...define("GITNUT_SITE_URL", site),
-    join(DAEMON, "src", "cli.ts"),
-    "--outfile",
-    file,
-  ]);
+  run(["bun", "build", "--compile", "--minify", `--target=bun-${t}`, ...define("GITNUT_VERSION", version), ...define("GITNUT_SITE_URL", site), join(DAEMON, "src", "cli.ts"), "--outfile", file], {
+    live: true,
+  });
   console.log(`built ${relative(ROOT, file)} (${(statSync(file).size / 1e6).toFixed(1)} MB)`);
 }

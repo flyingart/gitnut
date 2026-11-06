@@ -1,12 +1,12 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { ChevronDown, ChevronRight, Filter, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, Filter } from "lucide-react";
 import type { RefInfo } from "@gitnut/commons";
 import { useLogActions } from "./actions";
 import { useGraphSnapshot } from "./hooks";
 import type { ServerProp } from "./provider";
 import { GitnutRoot, useCx, type StyleProps } from "./root";
 import { RefIcon } from "./graph/refs";
-import { Empty, isMenuKey, menuPointOf, Spinner, useContextMenu } from "./ui";
+import { Empty, IconButton, isMenuKey, Loading, menuPointOf, SearchInput, useContextMenu } from "./ui";
 
 /** Props of {@link RefsList}. */
 export interface RefsListProps extends StyleProps {
@@ -100,18 +100,17 @@ export function RefsList(props: RefsListProps) {
       <span className="gitnut-refs-name">{label ?? (r.kind === "remote" ? r.name.slice(r.name.indexOf("/") + 1) : r.name)}</span>
       {r.worktrees.length > 0 && r.kind === "local" && <span className="gitnut-refs-wt" title="Checked out in a worktree" />}
       {props.onFilter && (
-        <button
-          type="button"
+        <IconButton
+          size="xs"
           className="gitnut-refs-filter"
           title="Show only this branch"
           aria-label={`Filter by ${r.name}`}
+          icon={<Filter size={11} />}
           onClick={(e) => {
             e.stopPropagation();
             props.onFilter!(r);
           }}
-        >
-          <Filter size={11} />
-        </button>
+        />
       )}
     </div>
   );
@@ -138,14 +137,11 @@ export function RefsList(props: RefsListProps) {
     <GitnutRoot component="branches" theme={props.theme} className={props.className} classNames={props.classNames} style={props.style}>
       {props.showSearch !== false && (
         <div className={cx("toolbar", "gitnut-toolbar")}>
-          <label className={cx("input", "gitnut-search")}>
-            <Search size={13} className="gitnut-muted" />
-            <input placeholder="Branches and tags" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search branches" />
-          </label>
+          <SearchInput placeholder="Branches and tags" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search branches" />
         </div>
       )}
       <div className={cx("tree", "gitnut-refs-tree", "gitnut-scroll")} role="tree" aria-label="Branches">
-        {loading ? <div className="gitnut-center"><Spinner /></div> : sections.every((s) => !s.refs.length && !s.children?.length) ? <Empty title="No branches" /> : sections.map((s) => renderSection(s, 0))}
+        {loading ? <Loading /> : sections.every((s) => !s.refs.length && !s.children?.length) ? <Empty title="No branches" /> : sections.map((s) => renderSection(s, 0))}
       </div>
       {menu.menu}
     </GitnutRoot>

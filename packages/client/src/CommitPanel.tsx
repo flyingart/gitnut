@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useWorktree } from "./hooks";
 import type { ServerProp } from "./provider";
 import { GitnutRoot, useCx, type StyleProps } from "./root";
-import { Button } from "./ui";
+import { Button, shortHash } from "./ui";
 import { Checkbox } from "./form";
 
 /** Props of {@link CommitPanel}. */
@@ -44,7 +44,7 @@ export function CommitPanel(props: CommitPanelProps) {
       const r = await conn.call("worktree.commit", { worktreeId: wt.id, message: message.trim(), paths: props.paths ?? [], amend });
       setMessage("");
       setAmend(false);
-      setDone(r.hash.slice(0, 8));
+      setDone(shortHash(r.hash));
       setTimeout(() => setDone(null), 4000);
       props.onCommitted?.(r.hash);
     } catch (e) {

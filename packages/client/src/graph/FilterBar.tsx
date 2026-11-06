@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, ChevronDown, FolderTree, GitBranch, Search, User, X } from "lucide-react";
+import { Calendar, ChevronDown, FolderTree, GitBranch, User } from "lucide-react";
 import type { GraphFilter, RefInfo } from "@gitnut/commons";
 import { useCx } from "../root";
-import { Popover } from "../ui";
+import { Button, Menu, MenuButton, MenuCheck, Popover, SearchInput } from "../ui";
 
 /** Log filters (IntelliJ filter bar): text, branch, user, date, paths. */
 export interface LogFilter {
@@ -56,36 +56,21 @@ export function FilterBar({ value, onChange, refs, authors = [], busy }: FilterB
 
   return (
     <div className={cx("toolbar", "gitnut-toolbar", "gitnut-filterbar")} role="search">
-      <label className={cx("input", "gitnut-search")}>
-        <Search size={13} className="gitnut-muted" />
-        <input placeholder="Text or hash" value={text} onChange={(e) => setText(e.target.value)} aria-label="Filter by text" />
-        {text && (
-          <button type="button" className="gitnut-search-clear" aria-label="Clear text filter" onClick={() => setText("")}>
-            <X size={12} />
-          </button>
-        )}
-      </label>
+      <SearchInput placeholder="Text or hash" value={text} onChange={(e) => setText(e.target.value)} aria-label="Filter by text" onClear={() => setText("")} />
       <Popover title="Filter by branch" icon={<GitBranch size={13} />} label={<Chip text={branchLabel} />} active={!!value.branches?.length}>
         {(close) => (
-          <div className="gitnut-menu gitnut-scroll" style={{ maxHeight: 320 }}>
-            <button type="button" className="gitnut-menu-item" onClick={() => (set({ branches: undefined }), close())}>
-              All branches
-            </button>
+          <Menu maxHeight={320}>
+            <MenuButton onClick={() => (set({ branches: undefined }), close())}>All branches</MenuButton>
             {branchNames.map((r) => {
               const on = value.branches?.includes(r.full) ?? false;
               return (
-                <label key={r.full} className="gitnut-menu-item">
-                  <input
-                    type="checkbox"
-                    checked={on}
-                    onChange={() => set({ branches: on ? value.branches!.filter((b) => b !== r.full) : [...(value.branches ?? []), r.full] })}
-                  />
+                <MenuCheck key={r.full} checked={on} onChange={() => set({ branches: on ? value.branches!.filter((b) => b !== r.full) : [...(value.branches ?? []), r.full] })}>
                   <span className={`gitnut-ref-dot gitnut-ref-${r.kind}`} />
                   {r.name}
-                </label>
+                </MenuCheck>
               );
             })}
-          </div>
+          </Menu>
         )}
       </Popover>
       <Popover title="Filter by user" icon={<User size={13} />} label={<Chip text={value.author || "User"} />} active={!!value.author}>
@@ -93,25 +78,23 @@ export function FilterBar({ value, onChange, refs, authors = [], busy }: FilterB
       </Popover>
       <Popover title="Filter by date" icon={<Calendar size={13} />} label={<Chip text={DAYS.find((d) => d.days === value.days)?.label ?? "Date"} />} active={!!value.days}>
         {(close) => (
-          <div className="gitnut-menu">
-            <button type="button" className="gitnut-menu-item" onClick={() => (set({ days: undefined }), close())}>
-              Any time
-            </button>
+          <Menu>
+            <MenuButton onClick={() => (set({ days: undefined }), close())}>Any time</MenuButton>
             {DAYS.map((d) => (
-              <button key={d.days} type="button" className={`gitnut-menu-item${value.days === d.days ? " gitnut-active" : ""}`} onClick={() => (set({ days: d.days }), close())}>
+              <MenuButton key={d.days} active={value.days === d.days} onClick={() => (set({ days: d.days }), close())}>
                 {d.label}
-              </button>
+              </MenuButton>
             ))}
-          </div>
+          </Menu>
         )}
       </Popover>
       <Popover title="Filter by path" icon={<FolderTree size={13} />} label={<Chip text={value.path || "Paths"} />} active={!!value.path}>
         {(close) => <TextFilter value={value.path} placeholder="src/ or a file path" onDone={(path) => (set({ path }), close())} />}
       </Popover>
       {(value.text || value.author || value.path || value.days || value.branches?.length) && (
-        <button type="button" className="gitnut-link" onClick={() => onChange({})}>
+        <Button variant="link" onClick={() => onChange({})}>
           Clear filters
-        </button>
+        </Button>
       )}
       {busy && <span className="gitnut-muted gitnut-count">Filtering…</span>}
     </div>
@@ -145,12 +128,12 @@ function TextFilter({ value, placeholder, suggestions, onDone }: { value?: strin
         </datalist>
       )}
       <div className="gitnut-row-actions">
-        <button type="button" className="gitnut-link" onClick={() => onDone(undefined)}>
+        <Button variant="link" onClick={() => onDone(undefined)}>
           Clear
-        </button>
-        <button type="submit" className="gitnut-btn gitnut-btn-primary gitnut-btn-sm">
+        </Button>
+        <Button type="submit" variant="primary" size="sm">
           Apply
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -10,7 +10,7 @@ import { GitnutRoot, useCx, type StyleProps } from "./root";
 import { baseExtensions, languageFor } from "./diff/cm";
 import { lineFirstDiff } from "./diff/lineDiff";
 import { SideBySideDiff } from "./diff/sideBySide";
-import { Empty, ErrorBoundary, formatSize, IconButton, Segmented, Spinner } from "./ui";
+import { Empty, ErrorBoundary, formatSize, IconButton, Loading, Segmented, shortHash } from "./ui";
 import { useViewOptions } from "./viewOptions";
 import { ImageDiff } from "./ImageDiff";
 
@@ -63,7 +63,7 @@ const STATUS_LABEL: Record<ChangeStatus, string> = {
 };
 
 export const sideLabel = (s: FileSide | null | undefined) =>
-  !s ? "" : s.ref === "WORKTREE" ? "Working tree" : s.ref === "INDEX" ? "Index" : s.ref.slice(0, 8);
+  !s ? "" : s.ref === "WORKTREE" ? "Working tree" : s.ref === "INDEX" ? "Index" : shortHash(s.ref);
 
 /** IntelliJ-style diff: side-by-side with connector bands (default) or unified, syntax and word highlights. */
 export function DiffViewer(props: DiffViewerProps) {
@@ -277,9 +277,7 @@ function DiffViewerInner(props: DiffViewerProps) {
         ) : req && loaded.error ? (
           <Empty title="Couldn't load this file">{loaded.error.message}</Empty>
         ) : !ready ? (
-          <div className="gitnut-center">
-            <Spinner size={18} />
-          </div>
+          <Loading size={18} />
         ) : isImage ? (
           <ImageDiff before={left} after={right} />
         ) : placeholder ? (

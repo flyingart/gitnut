@@ -4,12 +4,12 @@ import type { FileChange, RepoSummary, WorktreeSummary } from "@gitnut/commons";
 import type { GitnutConnection } from "./connection";
 import { useLocalFileMenu } from "./actions";
 import { ChangesBrowser } from "./ChangesBrowser";
-import { totalCount, worktreeLabel } from "./LocalChanges";
+import { totalCount } from "./LocalChanges";
 import { resolveConnection, useServers, type ServerProp } from "./provider";
 import { useQueries, useReposOf } from "./hooks";
 import { GitnutRoot, useCx, type StyleProps } from "./root";
 import type { ChangeItem, TreeGroup } from "./tree";
-import { Empty, Popover } from "./ui";
+import { Empty, Menu, MenuCheck, Popover, worktreeFolder, worktreeLabel } from "./ui";
 import { useViewOptions } from "./viewOptions";
 
 /** A worktree on a server. */
@@ -90,7 +90,7 @@ export function CombinedLocalChanges(props: CombinedLocalChangesProps) {
       const groups: TreeGroup[] = [];
       if (multiServer) groups.push({ id: t.conn.url, label: t.conn.name, kind: "server" });
       groups.push({ id: `${t.conn.url}|${t.repo.id}`, label: t.repo.name, kind: "repo" });
-      groups.push({ id: t.key, label: worktreeLabel(t.wt), kind: "worktree", detail: t.wt.isMain ? undefined : t.wt.path.split("/").pop() });
+      groups.push({ id: t.key, label: worktreeLabel(t.wt), kind: "worktree", detail: t.wt.isMain ? undefined : worktreeFolder(t.wt.path) });
       for (const change of statuses[i]?.data?.changes ?? []) {
         out.push({ key: `${t.key}|${change.path}`, change, groups, source: { server: t.conn.url, repoId: t.repo.id, worktreeId: t.wt.id } });
       }
@@ -115,24 +115,19 @@ export function CombinedLocalChanges(props: CombinedLocalChangesProps) {
         {chooser && (
           <Popover title="Choose worktrees" icon={<SlidersHorizontal size={13} />} label="Worktrees" align="right">
             {() => (
-              <div className="gitnut-menu gitnut-scroll" style={{ maxHeight: 360 }}>
+              <Menu maxHeight={360}>
                 {!chooserList.length && <div className="gitnut-menu-label">No worktree has changes</div>}
                 {chooserList.map((t) => {
                   const on = !options.combinedExclude.includes(t.key);
                   return (
-                    <label key={t.key} className="gitnut-menu-item">
-                      <input
-                        type="checkbox"
-                        checked={on}
-                        onChange={() => set("combinedExclude", on ? [...options.combinedExclude, t.key] : options.combinedExclude.filter((k) => k !== t.key))}
-                      />
+                    <MenuCheck key={t.key} checked={on} onChange={() => set("combinedExclude", on ? [...options.combinedExclude, t.key] : options.combinedExclude.filter((k) => k !== t.key))}>
                       <span>{t.repo.name}</span>
                       <span className="gitnut-muted">{worktreeLabel(t.wt)}</span>
                       <span className="gitnut-muted gitnut-menu-right">{totalCount(t.wt.counts)}</span>
-                    </label>
+                    </MenuCheck>
                   );
                 })}
-              </div>
+              </Menu>
             )}
           </Popover>
         )}

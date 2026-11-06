@@ -95,7 +95,7 @@ export function Toasts() {
 
 // ---- confirm / prompt ---------------------------------------------------------------------
 
-/** What {@link ConfirmDialog} / {@link confirmAction} shows. */
+/** What {@link confirmAction} shows. */
 export interface ConfirmSpec {
   title: string;
   message?: ReactNode;
@@ -118,7 +118,7 @@ export interface ConfirmResult {
   checked: boolean;
 }
 
-/** What {@link PromptDialog} / {@link promptAction} shows: a name input plus the confirm options. */
+/** What {@link promptAction} shows: a name input plus the confirm options. */
 export interface PromptSpec extends Omit<ConfirmSpec, "command" | "choices" | "initialChoice" | "message"> {
   label: string;
   placeholder?: string;
@@ -261,16 +261,6 @@ function ActionDialog({ spec, prompt, onDone }: { spec: ConfirmSpec | PromptSpec
       </form>
     </Dialog>
   );
-}
-
-/** Controlled confirm dialog (danger variant for destructive ops, shows the exact git command and the worktree). */
-export function ConfirmDialog(props: ConfirmSpec & { onConfirm: (r: ConfirmResult) => void; onCancel: () => void }) {
-  return <ActionDialog spec={props} prompt={false} onDone={(r) => (r ? props.onConfirm({ choice: r.choice, checked: r.checked }) : props.onCancel())} />;
-}
-
-/** Controlled name prompt with validation (new branch / tag), optional checkbox and message field. */
-export function PromptDialog(props: PromptSpec & { onSubmit: (r: PromptResult) => void; onCancel: () => void }) {
-  return <ActionDialog spec={props} prompt onDone={(r) => (r ? props.onSubmit({ value: r.value, checked: r.checked, message: r.message }) : props.onCancel())} />;
 }
 
 // ---- host ---------------------------------------------------------------------------------

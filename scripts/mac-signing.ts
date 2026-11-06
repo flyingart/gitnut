@@ -7,13 +7,8 @@
 // Non-interactive (CI): set APPLE_SIGNING_IDENTITY and create the profile beforehand, or pass --no-notarize.
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-
-const tty = process.stdin.isTTY && process.stdout.isTTY;
-
-function sh(cmd: string[], live = false): { code: number; out: string } {
-  const p = Bun.spawnSync(cmd, { stdio: live ? ["inherit", "inherit", "inherit"] : ["ignore", "pipe", "pipe"] });
-  return { code: p.exitCode ?? 1, out: live ? "" : `${p.stdout}${p.stderr}` };
-}
+import * as p from "@clack/prompts";
+import { ROOT, ask, confirm, interactive, ok, run } from "./lib";
 
 export interface Signing {
   identity: string;
@@ -22,12 +17,12 @@ export interface Signing {
 
 /** `Developer ID Application: Name (TEAMID)` entries of the login keychain. */
 export function developerIds(): Signing[] {
-  const { out } = sh(["security", "find-identity", "-v", "-p", "codesigning"]);
+  const out = run(["security", "find-identity", "-v", "-p", "codesigning"], { allowFail: true });
   return [...out.matchAll(/"(Developer ID Application: [^"]*\(([A-Z0-9]{10})\))"/g)].map((m) => ({ identity: m[1], team: m[2] }));
 }
 
 /** The signing identity to use, or null (unsigned build). Asks when there are several. */
-export function pickIdentity(root: string): Signing | null {
+export async function pickIdentity(): Promise<Signing | null> {
   const fromEnv = process.env.APPLE_SIGNING_IDENTITY?.trim();
   if (fromEnv) return { identity: fromEnv, team: /\(([A-Z0-9]{10})\)\s*$/.exec(fromEnv)?.[1] ?? process.env.APPLE_TEAM_ID ?? "" };
   const ids = developerIds();
@@ -37,44 +32,39 @@ export function pickIdentity(root: string): Signing | null {
   }
   let pick = ids[0];
   if (ids.length > 1) {
-    if (!tty) throw new Error(`several Developer ID certificates; set APPLE_SIGNING_IDENTITY to one of:\n  ${ids.map((i) => i.identity).join("\n  ")}`);
-    console.log("Signing certificates:");
-    ids.forEach((i, n) => console.log(`  ${n + 1}) ${i.identity}`));
-    const n = Number(prompt(`Use which? [1-${ids.length}]`, "1"));
-    pick = ids[n - 1] ?? ids[0];
+    if (!interactive) throw new Error(`several Developer ID certificates; set APPLE_SIGNING_IDENTITY to one of:\n  ${ids.map((i) => i.identity).join("\n  ")}`);
+    pick = await ask(p.select({ message: "Signing certificate", options: ids.map((i) => ({ value: i, label: i.identity })) }));
   }
   console.log(`macOS: signing with ${pick.identity}`);
-  const envFile = join(root, ".env");
+  const envFile = join(ROOT, ".env");
   const saved = existsSync(envFile) && readFileSync(envFile, "utf8").includes("APPLE_SIGNING_IDENTITY=");
-  if (tty && !saved && (prompt("Remember it in .env? [Y/n]", "y") ?? "y").toLowerCase().startsWith("y")) {
+  if (interactive && !saved && (await confirm("Remember it in .env?"))) {
     appendFileSync(envFile, `\nAPPLE_SIGNING_IDENTITY="${pick.identity}"\n`);
   }
   return pick;
 }
 
 /** Name of a working notarytool Keychain profile, creating it interactively on first use; null = skip. */
-export function notaryProfile(team: string): string | null {
+export async function notaryProfile(team: string): Promise<string | null> {
   const name = process.env.GITNUT_NOTARY_PROFILE?.trim() || "gitnut-notary";
-  if (sh(["xcrun", "notarytool", "history", "--keychain-profile", name]).code === 0) return name;
-  if (!tty) {
+  if (ok(["xcrun", "notarytool", "history", "--keychain-profile", name])) return name;
+  if (!interactive) {
     console.warn(`macOS: no notarytool profile "${name}", not notarizing (create it with: xcrun notarytool store-credentials ${name} --team-id ${team || "<TEAM>"}).`);
     return null;
   }
-  if (!(prompt(`Notarize (needs your Apple ID + an app-specific password from appleid.apple.com, stored in the Keychain)? [Y/n]`, "y") ?? "y").toLowerCase().startsWith("y")) return null;
-  const args = ["xcrun", "notarytool", "store-credentials", name, ...(team ? ["--team-id", team] : [])];
-  if (sh(args, true).code !== 0) throw new Error("notarytool store-credentials failed");
+  if (!(await confirm("Notarize (needs your Apple ID + an app-specific password from appleid.apple.com, stored in the Keychain)?"))) return null;
+  run(["xcrun", "notarytool", "store-credentials", name, ...(team ? ["--team-id", team] : [])], { live: true });
   return name;
 }
 
 /** Sign a binary with the hardened runtime (notarization requires it) and the Bun entitlements. */
 export function signBinary(path: string, identity: string, entitlements: string) {
-  const r = sh(["codesign", "--force", "--timestamp", "--options", "runtime", "--entitlements", entitlements, "--sign", identity, path], true);
-  if (r.code !== 0) throw new Error(`codesign ${path} failed`);
+  if (!ok(["codesign", "--force", "--timestamp", "--options", "runtime", "--entitlements", entitlements, "--sign", identity, path], { live: true })) throw new Error(`codesign ${path} failed`);
 }
 
 /** Notarize and staple a .dmg (Gatekeeper then opens it without warnings, also offline). */
 export function notarize(dmg: string, profile: string) {
   console.log(`macOS: notarizing ${dmg} (takes a few minutes)…`);
-  if (sh(["xcrun", "notarytool", "submit", dmg, "--keychain-profile", profile, "--wait"], true).code !== 0) throw new Error("notarization failed (see `xcrun notarytool log <id> --keychain-profile …`)");
-  if (sh(["xcrun", "stapler", "staple", dmg], true).code !== 0) throw new Error("stapling failed");
+  if (!ok(["xcrun", "notarytool", "submit", dmg, "--keychain-profile", profile, "--wait"], { live: true })) throw new Error("notarization failed (see `xcrun notarytool log <id> --keychain-profile …`)");
+  if (!ok(["xcrun", "stapler", "staple", dmg], { live: true })) throw new Error("stapling failed");
 }

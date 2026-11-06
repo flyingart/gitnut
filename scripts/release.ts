@@ -4,7 +4,7 @@
 // --publish: GitHub release v<version> with every file (gh CLI). The site reads releases from GitHub
 // (GITNUT_GITHUB_REPO), so this is the only step after building. Notes: "### New / ### Improved /
 // ### Fixed" headings with "- " bullets (they become the changelog page).
-// Env: GITNUT_DOWNLOAD_BASE_URL (required), GITNUT_SITE_URL, GITNUT_MANIFEST_URL, GITNUT_RELEASE_NOTES,
+// Env: GITNUT_SITE_URL (or GITNUT_DOWNLOAD_BASE_URL, default <site>/releases), GITNUT_MANIFEST_URL, GITNUT_RELEASE_NOTES,
 //      GITNUT_UPLOAD_CMD (for --upload, e.g. `rsync -av {dir}/ host:/srv/gitnut/{version}/`).
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -53,9 +53,10 @@ async function main() {
   if (!version || !/^\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?$/.test(version)) {
     throw new Error("usage: bun run release <version> [--targets all] [--skip-desktop] [--upload]");
   }
-  const base = process.env.GITNUT_DOWNLOAD_BASE_URL?.replace(/\/+$/, "");
-  if (!base) throw new Error("set GITNUT_DOWNLOAD_BASE_URL (assets are served from <base>/<version>/<file>)");
   const site = process.env.GITNUT_SITE_URL?.replace(/\/+$/, "");
+  // default: the site serves the files (from GitHub releases) at <site>/releases/<version>/<file>
+  const base = (process.env.GITNUT_DOWNLOAD_BASE_URL || (site ? `${site}/releases` : "")).replace(/\/+$/, "");
+  if (!base) throw new Error("set GITNUT_SITE_URL or GITNUT_DOWNLOAD_BASE_URL (assets are served from <base>/<version>/<file>)");
   const manifestUrl = process.env.GITNUT_MANIFEST_URL ?? (site ? `${site}/manifest.json` : undefined);
   if (!manifestUrl) throw new Error("set GITNUT_SITE_URL (or GITNUT_MANIFEST_URL): shipped binaries must know where updates come from");
 

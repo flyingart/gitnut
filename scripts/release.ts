@@ -6,9 +6,9 @@
 // Flags: --yes (accept defaults, no questions), --notes notes.md, --title "…", --cli / --no-cli.
 // Needs: gh (logged in), .env with GITNUT_SITE_URL (+ TAURI_SIGNING_PRIVATE_KEY for desktop builds).
 import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 import * as p from "@clack/prompts";
 import { DESKTOP_ASSETS, RUST_TRIPLES, SHA256SUMS, binaryName, formatSha256Sums, parseSha256Sums, platformOf, releaseFiles } from "@gitnut/commons";
@@ -184,8 +184,10 @@ async function build() {
   const built = readdirSync(dir).filter((f) => !f.startsWith(SHA256SUMS) && statSync(join(dir, f)).isFile());
   const sums: Record<string, string> = {};
   for (const f of built) sums[f] = createHash("sha256").update(readFileSync(join(dir, f))).digest("hex");
-  // per-machine name without the host name (draft assets are visible to repo members)
-  const partial = join(dir, `SHA256SUMS.${process.platform}-${process.arch}-${crypto.randomUUID().slice(0, 8)}`);
+  // One partial list per machine, under a stable name so a rebuild replaces it (--clobber) instead of
+  // leaving stale checksums next to it. Random machine id, kept in .cache/ (no host name: draft assets
+  // are visible to repo members).
+  const partial = join(dir, `SHA256SUMS.${process.platform}-${process.arch}-${machineId()}`);
   writeFileSync(partial, formatSha256Sums(sums));
   const s = p.spinner();
   s.start(`Uploading ${built.length} files to the draft v${version}`);
@@ -193,6 +195,15 @@ async function build() {
   s.stop(`Uploaded ${built.length} files`);
   const missing = expectedFiles(version).filter((f) => !new Set(assetsOf(version)).has(f));
   p.note(missing.length ? `Still missing (build them on another machine):\n  ${missing.join("\n  ")}` : "Every file is there: run `bun run release publish`.", `v${version}`);
+}
+
+function machineId(): string {
+  const file = join(ROOT, ".cache", "release-machine-id");
+  if (existsSync(file)) return readFileSync(file, "utf8").trim();
+  const id = crypto.randomUUID().slice(0, 8);
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, id);
+  return id;
 }
 
 const PLATFORMS_FILES = (version: string) => Object.entries(releaseFiles(version)).filter(([k]) => !k.startsWith("desktop-")).map(([, f]) => f);
@@ -243,7 +254,13 @@ async function publish() {
   const tmp = mkdtempSync(join(tmpdir(), "gitnut-publish-"));
   run(["gh", "release", "download", `v${version}`, "-R", repo(), "-p", "SHA256SUMS.*", "-D", tmp]);
   const sums: Record<string, string> = {};
-  for (const f of readdirSync(tmp)) Object.assign(sums, parseSha256Sums(readFileSync(join(tmp, f), "utf8")));
+  for (const f of readdirSync(tmp)) {
+    for (const [file, sum] of Object.entries(parseSha256Sums(readFileSync(join(tmp, f), "utf8")))) {
+      // a stale list from an earlier build must never win: refuse to guess
+      if (sums[file] && sums[file] !== sum) throw new Error(`two checksums for ${file} on the draft (${f}): delete the stale SHA256SUMS.* asset or rebuild`);
+      sums[file] = sum;
+    }
+  }
   const unsummed = assets.filter((a) => !a.startsWith(SHA256SUMS) && !sums[a]);
   if (unsummed.length) throw new Error(`no checksum for: ${unsummed.join(", ")} (upload them with \`bun run release build\`)`);
   const sumsFile = join(tmp, SHA256SUMS);

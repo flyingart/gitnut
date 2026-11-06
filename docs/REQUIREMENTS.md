@@ -132,6 +132,9 @@ component) connects to many daemons and shows all their projects.
   button first (like t3.codes/download), with all other downloads listed.
 - **R-SITE-2** Serves `/manifest.json`, `/install.sh`, `/install.ps1`, and `/download/<platform>`
   redirects. Configured only by env vars. Has a Dockerfile for Coolify.
+- **R-SITE-3** Pages carry canonical, Open Graph (og:image), Twitter and JSON-LD tags; the site
+  serves `/robots.txt` and `/sitemap.xml` on `GITNUT_SITE_URL`, and explains how to open the
+  unsigned builds on macOS, Windows and Linux.
 
 ## SDK / embedding (packages/client)
 

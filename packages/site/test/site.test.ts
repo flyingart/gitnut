@@ -73,6 +73,49 @@ describe("site", () => {
     expect(ps).not.toContain("__GITNUT_");
   });
 
+  test("R-SITE-3: /robots.txt allows all and points to the sitemap on GITNUT_SITE_URL", async () => {
+    const res = await site().get("/robots.txt");
+    expect(res.headers.get("content-type")).toStartWith("text/plain");
+    const text = await res.text();
+    expect(text).toContain("User-agent: *\nAllow: /");
+    expect(text).toContain("Sitemap: https://gitnut.example.com/sitemap.xml");
+    expect(await (await site({}).get("/robots.txt")).text()).toContain("Sitemap: https://gitnut.dev/sitemap.xml");
+  });
+
+  test("R-SITE-3: /sitemap.xml lists / and /changelog with the release date", async () => {
+    const res = await site().get("/sitemap.xml");
+    expect(res.headers.get("content-type")).toStartWith("application/xml");
+    const xml = await res.text();
+    expect(xml).toStartWith('<?xml version="1.0" encoding="UTF-8"?>');
+    expect(xml).toMatch(/<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">[\s\S]*<\/urlset>\n$/);
+    const locs = [...xml.matchAll(/<url><loc>([^<]+)<\/loc><lastmod>2026-11-06<\/lastmod><\/url>/g)].map((m) => m[1]);
+    expect(locs).toEqual(["https://gitnut.example.com/", "https://gitnut.example.com/changelog"]);
+    // no release: no lastmod, default origin
+    expect(await (await site({}).get("/sitemap.xml")).text()).toContain("<url><loc>https://gitnut.dev/changelog</loc></url>");
+  });
+
+  test("R-SITE-3: pages carry canonical, Open Graph, Twitter and JSON-LD tags", async () => {
+    const html = await (await site().get("/")).text();
+    for (const tag of [
+      '<link rel="canonical" href="https://gitnut.dev/">',
+      '<meta property="og:title"',
+      '<meta property="og:description"',
+      '<meta property="og:url" content="https://gitnut.dev/">',
+      '<meta property="og:image" content="https://gitnut.dev/og.png">',
+      '<meta property="og:image:width" content="1200">',
+      '<meta name="twitter:card" content="summary_large_image">',
+      '<link rel="manifest" href="/site.webmanifest">',
+    ])
+      expect(html).toContain(tag);
+    const ld = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1]);
+    expect(ld).toMatchObject({ "@type": "SoftwareApplication", name: "GitNut", applicationCategory: "DeveloperApplication" });
+    expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
+    expect(await (await site().get("/changelog")).text()).toContain('<link rel="canonical" href="https://gitnut.dev/changelog">');
+    const og = await site().get("/og.png");
+    expect(og.headers.get("content-type")).toBe("image/png");
+    expect((await og.arrayBuffer()).byteLength).toBeLessThan(400_000);
+  });
+
   test("R-SITE-2: site URL falls back to forwarded headers", async () => {
     const { GITNUT_SITE_URL: _, ...env } = ENV;
     const handle = createSite(env, (async () => new Response("")) as unknown as typeof fetch);

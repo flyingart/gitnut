@@ -57,6 +57,7 @@ export function createSite(env: Record<string, string | undefined> = process.env
   }
   // Only http(s) links: the page puts these into hrefs.
   const link = (v?: string) => (/^https?:\/\//i.test(v?.trim() ?? "") ? v!.trim() : undefined);
+  const canonical = env.GITNUT_SITE_URL?.trim().replace(/\/+$/, "") || "https://gitnut.dev";
   const sponsors = { github: link(env.GITNUT_SPONSOR_GITHUB), kofi: link(env.GITNUT_SPONSOR_KOFI), paypal: link(env.GITNUT_SPONSOR_PAYPAL) };
 
   async function sha256s(): Promise<Record<string, string> | undefined> {
@@ -142,6 +143,18 @@ export function createSite(env: Record<string, string | undefined> = process.env
       const f = Bun.file(join(env.GITNUT_RELEASE_DIR, ver, file));
       if (!(await f.exists())) return new Response("not found", { status: 404 });
       return new Response(f, { headers: { "content-type": "application/octet-stream", "cache-control": "public, max-age=300" } });
+    }
+
+    // Search engines get the canonical origin, never a forwarded host.
+    if (pathname === "/robots.txt") {
+      const text = (await Bun.file(join(PUBLIC, "robots.txt")).text()).replaceAll("https://gitnut.dev", canonical);
+      return new Response(text, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=3600" } });
+    }
+    if (pathname === "/sitemap.xml") {
+      const lastmod = /^\d{4}-\d{2}-\d{2}/.test(publishedAt ?? "") ? `<lastmod>${publishedAt!.slice(0, 10)}</lastmod>` : "";
+      const urls = ["/", "/changelog"].map((p) => `  <url><loc>${canonical}${p}</loc>${lastmod}</url>`).join("\n");
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+      return new Response(xml, { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=3600" } });
     }
 
     if (pathname === "/screenshots.json") {

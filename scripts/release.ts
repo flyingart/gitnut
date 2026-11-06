@@ -65,6 +65,9 @@ async function main() {
   for (const f of [...pkgs, "packages/desktop/src-tauri/tauri.conf.json", "packages/desktop/src-tauri/Cargo.toml"]) {
     if (existsSync(join(ROOT, f))) setVersion(join(ROOT, f), version);
   }
+  // Cargo.lock: only the app's own package entry
+  const lock = join(ROOT, "packages/desktop/src-tauri/Cargo.lock");
+  if (existsSync(lock)) writeFileSync(lock, readFileSync(lock, "utf8").replace(/(name = "gitnut-desktop"\nversion = )"[^"]*"/, `$1"${version}"`));
 
   // 2. web + daemon binaries into release/<version>/
   const dir = join(ROOT, "release", version);

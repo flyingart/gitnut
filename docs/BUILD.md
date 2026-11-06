@@ -254,11 +254,13 @@ bun run build:desktop --version 0.2.0 --target x86_64-pc-windows-msvc
    or the update icon next to the logo downloads `gitnut-<platform>`, verifies it against
    `SHA256SUMS`, replaces its binary and restarts. The web client is served by the daemon, so it
    updates with it.
-3. **Desktop app**: checks `<site>/desktop/latest.json` 15 s after start and every 10 minutes. A new
-   version asks "Install and restart" (or "Later", not asked again for that version until restart),
-   verifies the download against the updater public key in `tauri.conf.json`, stops the daemon it
-   started and relaunches; the new app's bundled daemon then replaces the one in `~/.gitnut/bin`.
-   The `.deb` does not self-update (reinstall it, or use the AppImage).
+3. **Desktop app**: one update path, the same update icon and Settings button as above. For the
+   app's own daemon they go through the app (Tauri updater): it checks `<site>/desktop/latest.json`
+   at start and every 10 minutes, verifies the download against the updater public key in
+   `tauri.conf.json`, stops the daemon it started and relaunches; the new app's bundled daemon then
+   replaces the one in `~/.gitnut/bin`. That daemon runs with `GITNUT_MANAGED_BY=desktop`, so it never
+   updates itself (it tells other clients "updates come with the GitNut desktop app"). The `.deb` does
+   not self-update (reinstall it, or use the AppImage).
 
 **Updater key:** made once with `bunx tauri signer generate -w ~/.tauri/gitnut.key`. The public key
 is in `tauri.conf.json` (`plugins.updater.pubkey`); the private key must be on every machine that

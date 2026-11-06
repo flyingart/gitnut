@@ -167,6 +167,8 @@ export interface UpdateInfo {
   /** Download page for desktop apps. */
   downloadUrl?: string;
   error?: string;
+  /** Set when the daemon came with the desktop app: it updates with the app, not by itself. */
+  managedBy?: "desktop";
 }
 
 /** Update manifest served by the website (`/manifest.json`). */

@@ -17,9 +17,10 @@ import {
   type UpdateInfo,
   type WorktreeSummary,
 } from "@gitnut/commons";
-import { GitnutRpcError, type GitnutConnection } from "./connection";
+import { GitnutRpcError, normalizeUrl, type GitnutConnection } from "./connection";
 import { useConnection, useConnectionState, type ServerProp } from "./provider";
 import type { Query, QueryState } from "./query";
+import { desktopApp } from "./desktop";
 
 const EMPTY: QueryState<any> = { data: undefined, error: null, loading: false };
 const noop = () => () => {};
@@ -265,10 +266,63 @@ export function useSettings(server?: ServerProp) {
 export type UpdatePhase = "idle" | "checking" | "applying" | "restarting" | "done" | "error";
 
 /** Update state of a daemon: check, apply, and follow the restart. */
+/**
+ * Update state and actions for one server, the single update path of the UI (update icon, Settings).
+ * Inside the desktop app its own daemon updates with the app (Tauri updater: app + daemon in one
+ * step); every other daemon updates itself (`update.check` / `update.apply`).
+ */
 export function useUpdate(server?: ServerProp) {
   const conn = useConnection(server);
+  const viaApp = !!desktopApp && !!conn && typeof location !== "undefined" && conn.url === normalizeUrl(location.origin);
+  const daemon = useDaemonUpdate(viaApp ? null : conn);
+  const app = useAppUpdate(viaApp);
+  return { ...(viaApp ? app : daemon), conn, viaApp };
+}
+
+const APP_CHECK_EVERY = 10 * 60_000;
+
+function useAppUpdate(enabled: boolean) {
+  const [info, setInfo] = useState<UpdateInfo | null>(null);
+  const [phase, setPhase] = useState<UpdatePhase>("idle");
+  const [message, setMessage] = useState<string | null>(null);
+  const check = useCallback(async (quiet = false) => {
+    if (!desktopApp) return;
+    if (!quiet) setPhase("checking");
+    try {
+      const i = await desktopApp.checkUpdate();
+      setInfo(i);
+      setPhase("idle");
+      if (!quiet) setMessage(i.available ? null : "You're on the latest version");
+    } catch (e) {
+      setPhase(quiet ? "idle" : "error");
+      if (!quiet) setMessage((e as Error).message ?? String(e));
+    }
+  }, []);
+  useEffect(() => {
+    if (!enabled) return;
+    void check(true);
+    const t = setInterval(() => void check(true), APP_CHECK_EVERY);
+    return () => clearInterval(t);
+  }, [enabled, check]);
+  const apply = useCallback(async () => {
+    if (!desktopApp) return;
+    setPhase("applying");
+    setMessage("Downloading the update…");
+    try {
+      await desktopApp.installUpdate(); // the app relaunches when done
+      setPhase("restarting");
+      setMessage("Restarting…");
+    } catch (e) {
+      setPhase("error");
+      setMessage((e as Error).message ?? String(e));
+    }
+  }, []);
+  return { info, phase, message, check: () => check(false), apply };
+}
+
+function useDaemonUpdate(conn: GitnutConnection | null) {
   const st = useConnectionState(conn);
-  const q = useQuery<UpdateInfo>(conn, st.state === "open" ? "update" : null, () => conn!.call("update.check"));
+  const q = useQuery<UpdateInfo>(conn, conn && st.state === "open" ? "update" : null, () => conn!.call("update.check"));
   const [phase, setPhase] = useState<UpdatePhase>("idle");
   const [message, setMessage] = useState<string | null>(null);
   const sawOffline = useRef(false);
@@ -290,7 +344,7 @@ export function useUpdate(server?: ServerProp) {
       const info = await conn.call("update.check");
       conn.query("update", () => conn.call("update.check")).set(info);
       setPhase("idle");
-      setMessage(info.error ?? (info.available ? null : "You're on the latest version"));
+      setMessage(info.error ?? (info.managedBy ? "Updates come with the GitNut desktop app" : info.available ? null : "You're on the latest version"));
     } catch (e) {
       setPhase("error");
       setMessage((e as Error).message);
@@ -312,7 +366,7 @@ export function useUpdate(server?: ServerProp) {
     }
   }, [conn]);
 
-  return { info: q.data ?? null, phase, message, check, apply, conn };
+  return { info: q.data ?? null, phase, message, check, apply };
 }
 
 /** Only the graph snapshot (refs, parents) without building a layout. Shares the fetch with useGraph. */

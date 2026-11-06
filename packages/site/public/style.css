@@ -470,3 +470,15 @@ h2 { font-size: clamp(1.7rem, 3.5vw, 2.4rem); letter-spacing: -0.035em; line-hei
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: 0s !important; }
 }
+
+/* beta label: header brand, hero pill, download section */
+.beta {
+  display: inline-flex; align-items: center; height: 1.15rem; padding: 0 0.42rem; margin-left: 0.45rem;
+  border-radius: 999px; border: 1px solid rgb(192 132 252 / 45%); background: rgb(192 132 252 / 12%);
+  color: #e9d5ff; font: 650 0.62rem/1 var(--sans, inherit); letter-spacing: 0.08em; text-transform: uppercase; vertical-align: middle;
+}
+.pill .beta { margin: 0 0.15rem 0 0; }
+.beta-note { margin: 0.6rem 0 0; color: var(--muted); font-size: 0.88rem; }
+.beta-note .beta { margin: 0 0.4rem 0 0; }
+.brand .beta { height: 1.05rem; font-size: 0.56rem; margin-left: 0.5rem; }
+.beta-note { margin-bottom: 1.2rem; }

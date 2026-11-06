@@ -18,7 +18,8 @@ import { ServersPanel } from "./ServersPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { Shortcuts } from "./Shortcuts";
 import { accentTheme } from "./theme";
-import { CLIENT_VERSION, desktopAppVersion } from "./version";
+import { useDesktopVersion } from "./desktop";
+import { CLIENT_VERSION } from "./version";
 import { UpdateButton } from "./UpdateButton";
 import { Dialog, Empty, IconButton, Popover, useContextMenu } from "./ui";
 import { useViewOptions, type ViewOptions } from "./viewOptions";
@@ -347,7 +348,7 @@ function AppInner(props: GitnutAppProps) {
 
 /** Bottom line of the settings: client (web) version, desktop app version when inside it. */
 function VersionFooter() {
-  const app = useMemo(desktopAppVersion, []);
+  const app = useDesktopVersion();
   return (
     <div className="gitnut-version-footer gitnut-muted" data-testid="version-footer">
       GitNut {CLIENT_VERSION}
